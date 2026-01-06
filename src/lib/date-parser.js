@@ -1,6 +1,13 @@
-import { eachDayOfInterval, parseISO, format } from 'date-fns';
+import { eachDayOfInterval, parseISO, format, subWeeks, startOfWeek, endOfWeek } from 'date-fns';
 
 export function parseDateInput(input) {
+  if (input === 'last') {
+    const lastWeekStart = startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 });
+    const lastWeekEnd = endOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 });
+    const dates = eachDayOfInterval({ start: lastWeekStart, end: lastWeekEnd });
+    return dates.map(date => format(date, 'yyyy-MM-dd'));
+  }
+
   if (input.includes(':')) {
     const [start, end] = input.split(':');
     const dates = eachDayOfInterval({
@@ -9,5 +16,6 @@ export function parseDateInput(input) {
     });
     return dates.map(date => format(date, 'yyyy-MM-dd'));
   }
+
   return [input];
 }
