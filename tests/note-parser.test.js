@@ -23,3 +23,12 @@ test('parseNoteFile - calculate duration in hours', () => {
   assert.strictEqual(result[0].duration, 1.0);
   assert.strictEqual(result[1].duration, 2.0);
 });
+
+test('parseNoteFile - extract ticket number', () => {
+  const content = `- [ ] 9:00 AM - 10:00 AM | ENTELECT-1834 - Test Harness`;
+
+  const result = parseNoteFile(content);
+
+  assert.strictEqual(result[0].ticket, 'ENTELECT-1834');
+  assert.strictEqual(result[0].type, 'ticket');
+});
