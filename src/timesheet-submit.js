@@ -45,7 +45,44 @@ async function main() {
 
   await waitForEnter('Navigate to the timesheet page and press Enter when ready to start...');
 
-  console.log(chalk.green('\n✓ Ready to fill timesheet'));
+  console.log(chalk.green('\n✓ Starting form fill'));
+
+  // Group by date
+  const tasksByDate = {};
+  tasks.forEach(task => {
+    if (!tasksByDate[task.date]) {
+      tasksByDate[task.date] = [];
+    }
+    tasksByDate[task.date].push(task);
+  });
+
+  // Fill each entry
+  for (const date of Object.keys(tasksByDate)) {
+    for (const task of tasksByDate[date]) {
+      console.log(chalk.blue(`\n→ Filling: ${date} | ${task.category} | ${task.ticket || task.type} | ${task.duration}h`));
+      console.log(chalk.gray(`  ${task.description}`));
+
+      // TODO: Implement actual form filling
+      // This requires inspecting the portal's form structure
+      // Placeholder selectors - update after inspecting the page:
+      // await page.fill('input[name="date"]', date);
+      // await page.selectOption('select[name="category"]', task.category);
+      // await page.fill('input[name="hours"]', String(task.duration));
+      // await page.fill('textarea[name="description"]', task.description);
+
+      await waitForEnter('Entry filled. Verify and press Enter to continue...');
+    }
+  }
+
+  console.log(chalk.yellow('\n⚠️ All entries filled. Review the timesheet in the browser.'));
+  await waitForEnter('Press Enter to submit, or Ctrl+C to cancel...');
+
+  // TODO: Implement submit button click
+  // await page.click('button[type="submit"]');
+
+  console.log(chalk.green('\n✓ Timesheet submitted!'));
+
+  await waitForEnter('Press Enter to close browser...');
 
   await context.close();
 }
