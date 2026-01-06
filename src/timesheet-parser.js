@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import chalk from 'chalk';
+import inquirer from 'inquirer';
 import { parseDateInput } from './lib/date-parser.js';
 import { parseNoteFile } from './lib/note-parser.js';
 import { filterBillableTasks } from './lib/task-filter.js';
@@ -76,6 +77,43 @@ async function main() {
   }
 
   console.log(chalk.green('\n✓ All tasks categorized'));
+
+  // Duration review
+  console.log(chalk.blue('\n--- Duration Review ---'));
+
+  const tasksByDate = {};
+  allTasks.forEach(task => {
+    if (!tasksByDate[task.date]) {
+      tasksByDate[task.date] = [];
+    }
+    tasksByDate[task.date].push(task);
+  });
+
+  let reviewing = true;
+  while (reviewing) {
+    for (const date of Object.keys(tasksByDate)) {
+      displayDurationSummary(tasksByDate[date], date);
+    }
+
+    const action = await promptDurationAction();
+
+    if (action === 'quit') {
+      console.log(chalk.yellow('Cancelled.'));
+      process.exit(0);
+    } else if (action === 'edit') {
+      const { dateToEdit } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'dateToEdit',
+          message: 'Which date to edit?',
+          choices: Object.keys(tasksByDate)
+        }
+      ]);
+      await editTaskDuration(tasksByDate[dateToEdit]);
+    } else {
+      reviewing = false;
+    }
+  }
 }
 
 main().catch(error => {
