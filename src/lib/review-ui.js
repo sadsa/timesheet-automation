@@ -78,3 +78,32 @@ export async function promptDurationAction() {
 
   return action;
 }
+
+export async function editTaskDuration(tasks) {
+  const { taskIndex } = await inquirer.prompt([
+    {
+      type: 'number',
+      name: 'taskIndex',
+      message: `Which entry to adjust? (1-${tasks.length}):`,
+      validate: (input) => {
+        const num = parseInt(input);
+        return num >= 1 && num <= tasks.length || 'Invalid entry number';
+      }
+    }
+  ]);
+
+  const task = tasks[taskIndex - 1];
+  console.log(chalk.gray(`Current: ${task.description} - ${task.duration}h`));
+
+  const { newDuration } = await inquirer.prompt([
+    {
+      type: 'number',
+      name: 'newDuration',
+      message: 'New duration in hours:',
+      validate: (input) => input > 0 || 'Duration must be positive'
+    }
+  ]);
+
+  task.duration = newDuration;
+  return tasks;
+}
