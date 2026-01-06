@@ -114,6 +114,14 @@ async function main() {
       reviewing = false;
     }
   }
+
+  // Generate output
+  const outputPath = 'output/timesheet-data.json';
+  await fs.mkdir('output', { recursive: true });
+  await fs.writeFile(outputPath, JSON.stringify(allTasks, null, 2));
+
+  console.log(chalk.green(`\n✓ Timesheet data saved to ${outputPath}`));
+  console.log(chalk.blue('\nRun: npm run submit'));
 }
 
 main().catch(error => {
