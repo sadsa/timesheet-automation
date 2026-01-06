@@ -13,3 +13,17 @@ test('filterBillableTasks - include ENTELECT tickets', () => {
   assert.strictEqual(result.length, 1);
   assert.strictEqual(result[0].ticket, 'ENTELECT-1834');
 });
+
+test('filterBillableTasks - include meeting keywords', () => {
+  const tasks = [
+    { description: 'DSU Zoom', type: 'other', ticket: null },
+    { description: 'MEETING with client', type: 'other', ticket: null },
+    { description: 'Standup call', type: 'other', ticket: null },
+    { description: 'Personal task', type: 'other', ticket: null }
+  ];
+
+  const result = filterBillableTasks(tasks);
+
+  assert.strictEqual(result.length, 3);
+  assert.strictEqual(result[0].type, 'meeting');
+});
