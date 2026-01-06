@@ -29,7 +29,43 @@ async function main() {
   }
 
   console.log(chalk.blue('Timesheet Parser\n'));
-  console.log(`Date input: ${dateInput}`);
+
+  const dates = parseDateInput(dateInput);
+  console.log(`Processing ${dates.length} date(s)...`);
+
+  const notesDir = process.env.NOTES_DIR || '/Users/entelect-jbiddick/Documents/Personal';
+  const allTasks = [];
+
+  for (const date of dates) {
+    const filePath = path.join(notesDir, `${date}.md`);
+
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const tasks = parseNoteFile(content);
+      const billableTasks = filterBillableTasks(tasks);
+
+      if (billableTasks.length === 0) {
+        console.log(chalk.yellow(`Warning: No billable tasks found for ${date}`));
+        continue;
+      }
+
+      billableTasks.forEach(task => {
+        task.date = date;
+        allTasks.push(task);
+      });
+
+      console.log(chalk.green(`✓ Found ${billableTasks.length} billable task(s) for ${date}`));
+    } catch (error) {
+      console.log(chalk.yellow(`Warning: No daily note found for ${date}, skipping...`));
+    }
+  }
+
+  if (allTasks.length === 0) {
+    console.log(chalk.red('No billable tasks found in any dates.'));
+    process.exit(0);
+  }
+
+  console.log(chalk.blue(`\nTotal: ${allTasks.length} billable tasks`));
 }
 
 main().catch(error => {
