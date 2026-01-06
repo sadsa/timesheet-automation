@@ -27,3 +27,15 @@ test('filterBillableTasks - include meeting keywords', () => {
   assert.strictEqual(result.length, 3);
   assert.strictEqual(result[0].type, 'meeting');
 });
+
+test('filterBillableTasks - exclude lunch and breaks', () => {
+  const tasks = [
+    { description: 'ENTELECT-1834', type: 'ticket', ticket: 'ENTELECT-1834' },
+    { description: 'Lunch break', type: 'other', ticket: null },
+    { description: 'Coffee break', type: 'other', ticket: null }
+  ];
+
+  const result = filterBillableTasks(tasks);
+
+  assert.strictEqual(result.length, 1);
+});
