@@ -48,3 +48,33 @@ export async function promptForCategory(task, categories) {
 
   return category;
 }
+
+export function displayDurationSummary(tasks, date) {
+  console.log(chalk.yellow(`\n=== ${date} ===`));
+
+  let total = 0;
+  tasks.forEach((task, idx) => {
+    console.log(`${idx + 1}. [${task.category}] ${task.description.substring(0, 40)}... ${task.duration}h`);
+    total += task.duration;
+  });
+
+  const warning = total !== 8 ? chalk.red(' ⚠️') : chalk.green(' ✓');
+  console.log(chalk.bold(`\n                                      Total: ${total}h / 8.0h${warning}`));
+}
+
+export async function promptDurationAction() {
+  const { action } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'action',
+      message: 'Options:',
+      choices: [
+        { name: 'Continue', value: 'continue' },
+        { name: 'Edit durations', value: 'edit' },
+        { name: 'Quit', value: 'quit' }
+      ]
+    }
+  ]);
+
+  return action;
+}
