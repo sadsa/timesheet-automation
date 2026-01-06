@@ -66,6 +66,16 @@ async function main() {
   }
 
   console.log(chalk.blue(`\nTotal: ${allTasks.length} billable tasks`));
+
+  // Category selection
+  console.log(chalk.blue('\n--- Category Selection ---'));
+  const categories = await loadCategories();
+
+  for (const task of allTasks) {
+    task.category = await promptForCategory(task, categories);
+  }
+
+  console.log(chalk.green('\n✓ All tasks categorized'));
 }
 
 main().catch(error => {
