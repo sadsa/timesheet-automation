@@ -13,3 +13,13 @@ test('parseNoteFile - extract task lines from markdown', () => {
   assert.strictEqual(result.length, 3);
   assert.strictEqual(result[0].description, 'ENTELECT-1834 - Test Harness');
 });
+
+test('parseNoteFile - calculate duration in hours', () => {
+  const content = `- [ ] 9:00 AM - 10:00 AM | Task A
+- [ ] 1:00 PM - 3:00 PM | Task B`;
+
+  const result = parseNoteFile(content);
+
+  assert.strictEqual(result[0].duration, 1.0);
+  assert.strictEqual(result[1].duration, 2.0);
+});
