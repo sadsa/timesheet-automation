@@ -1,4 +1,20 @@
 #!/usr/bin/env node
+/**
+ * Timesheet Submission Automation
+ *
+ * TO COMPLETE IMPLEMENTATION:
+ * 1. Run this script once: node src/timesheet-submit.js
+ * 2. When browser opens, right-click timesheet form elements and "Inspect"
+ * 3. Note the selectors for: date input, category dropdown, hours input, description textarea, submit button
+ * 4. Update the TODO sections below with actual selectors
+ *
+ * Example selectors to look for:
+ * - input[name="date"] or #dateField
+ * - select[name="category"] or #categorySelect
+ * - input[name="hours"] or .hours-input
+ * - textarea[name="description"] or #descriptionField
+ * - button[type="submit"] or .submit-button
+ */
 import { chromium } from 'playwright';
 import fs from 'fs/promises';
 import chalk from 'chalk';
