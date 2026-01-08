@@ -1,0 +1,34 @@
+{
+  "R - Canva - Agile Team": [
+    "Meetings",
+    "Hubspot Data App Software Dev",
+    "Hubspot Data App Analysis",
+    "Hubspot Data App Dev Support",
+    "Salesforce Data App Analysis",
+    "OneDrive",
+    "Other"
+  ],
+  "Meetings and Reviews (NZ)": [
+    "Client Interview",
+    "Client Interview Preparation",
+    "Entelect Knowledge Sharing Meeting",
+    "New Employee Induction",
+    "One On One Attendance",
+    "Other"
+  ],
+  "Social Events (NZ)": [
+    "Social Club Attendance",
+    "Team Building Attendance",
+    "Team Lunch Attendance",
+    "Company Function Attendance",
+    "Community Contribution"
+  ],
+  "Training (NZ)": [
+    "Training Attendance",
+    "Training Preparation",
+    "Training Presentation",
+    "Beer & Tech Attendance",
+    "Beer & Tech Presentation",
+    "Other"
+  ]
+}

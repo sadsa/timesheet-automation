@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 A Node.js CLI tool that automates timesheet entry to the Entelect portal by parsing Obsidian daily note files. The workflow is two-phase:
-1. **Parse phase** (`timesheet-parser.js`): Extract tasks from Obsidian notes, filter billable work, prompt for categories, review durations
+1. **Parse phase** (`timesheet-parser.js`): Extract tasks from Obsidian notes with embedded Project/Category, validate against config, display summary
 2. **Submit phase** (`timesheet-submit.js`): Use Playwright to automate browser form submission to the portal
 
 ## Commands
@@ -38,26 +38,35 @@ node --test tests/note-parser.test.js
 
 ### Data Flow
 
-1. **Obsidian notes** (markdown files) → `note-parser.js` → Task objects with start/end times
+1. **Obsidian notes** (markdown files) → `note-parser.js` → Task objects with start/end times, Project, and Category
 2. **Task objects** → `task-filter.js` → Filtered billable tasks (excludes lunch/breaks, keeps tickets/meetings)
-3. **Filtered tasks** → `review-ui.js` → User categorizes tasks and reviews durations interactively
-4. **Reviewed tasks** → `output/timesheet-data.json` → Structured JSON output
-5. **JSON output** → `timesheet-submit.js` → Playwright automation fills portal form
+3. **Filtered tasks** → Validation → Fail fast if Project/Category missing or invalid
+4. **Validated tasks** → `review-ui.js` → Display hierarchical summary (Project → Category → Tasks)
+5. **Validated tasks** → `output/timesheet-data.json` → Structured JSON output
+6. **JSON output** → `timesheet-submit.js` → Playwright automation fills portal form
 
 ### Task Format
 
-Obsidian daily notes must contain tasks in this exact format:
+Obsidian daily notes must contain tasks in pipe-delimited format:
+
+**With ticket:**
 ```
 - [ ] 9:00 AM - 10:00 AM | Project Name | Category Name | ENTELECT-1234 | Description
 ```
 
-Tasks are parsed into objects with:
+**Without ticket:**
+```
+- [ ] 9:00 AM - 10:00 AM | Project Name | Category Name | Description
+```
+
+The parser automatically detects ticket numbers (ENTELECT-XXXX pattern) anywhere in the task. Tasks are parsed into objects with:
 - `start`, `end`, `duration` (calculated in hours)
-- `description`, `ticket` (extracted from ENTELECT-XXXX pattern)
-- `type` (ticket/meeting/other)
-- `project` (extracted from note format, validated against `config/projects-categories.json`)
-- `category` (extracted from note format, validated against project's categories)
-- `date` (YYYY-MM-DD)
+- `project` (from pipe-delimited format, validated against `config/projects-categories.json`)
+- `category` (from pipe-delimited format, validated against project's categories)
+- `ticket` (extracted from ENTELECT-XXXX pattern, optional)
+- `description` (remaining text after parsing)
+- `type` (ticket/meeting/other, auto-detected)
+- `date` (YYYY-MM-DD, added during parsing)
 
 ### Filtering Logic (task-filter.js)
 
@@ -65,11 +74,28 @@ Billable tasks are identified by:
 - **Include**: Tasks with JIRA tickets (ENTELECT-XXXX) or meeting keywords (MEETING, zoom, call, DSU, standup, sync)
 - **Exclude**: Tasks with lunch/break keywords
 
-### Interactive Review (review-ui.js)
+### Review Summary (review-ui.js)
 
-The parse phase includes two interactive steps:
-1. **Category assignment**: User selects category for each task from `config/categories.json` (can add new categories on the fly)
-2. **Duration review**: Displays daily summaries with total hours, warns if ≠ 8h, allows editing individual task durations
+The parse phase displays a read-only hierarchical summary of parsed tasks:
+- Tasks are grouped by **Project** → **Category**
+- Shows each task with ticket/type, description (truncated), and duration
+- Displays total hours per day with visual indicator (✓ for 8h, ⚠️ otherwise)
+- No interactive editing - durations must be adjusted in source notes and re-parsed
+
+**Note**: To adjust Project, Category, or durations, edit the daily notes and re-run the parser.
+
+### Configuration
+
+**Projects and Categories** (`config/projects-categories.json`):
+- Hierarchical structure mapping Projects to their valid Categories
+- Used for validation during parsing (fail fast on invalid Project/Category)
+- Format:
+  ```json
+  {
+    "Project Name": ["Category 1", "Category 2"],
+    "Another Project": ["Category A", "Category B"]
+  }
+  ```
 
 ### Browser Automation (timesheet-submit.js)
 
@@ -109,8 +135,13 @@ Uses Node.js built-in test runner (`node:test`). Test files in `tests/` director
 
 ## Common Issues
 
-- If no tasks are found, verify the Obsidian task format matches the regex in `note-parser.js:18`
+- If no tasks are found, verify the Obsidian task format matches the pipe-delimited format (see Task Format section)
+- If validation fails with "missing Project or Category", ensure all tasks use the pipe-delimited format with Project and Category
+- If validation fails with "invalid Project or Category", verify the values exist in `config/projects-categories.json`
 - If duration totals are incorrect, check time parsing in `calculateDuration()` (uses date-fns)
-- If browser automation fails to find elements, the portal's UI may have changed - see `FORM_SELECTORS.md` for current selectors
-- Timeline clicks must target the gray bar area (not the day label) to open the time entry form
+- If browser automation fails to find elements, the portal's UI may have changed
+- **Timeline interaction**: Must click on `.timeEntry-entry` element (the gray timeline bar), NOT the date label
+  - DOM structure: `DIV.timeEntry` contains `DIV.timeEntry-infoHeader` (blocks clicks!) and `DIV.timeEntry-entry` (clickable)
+  - The `.timeEntry-infoHeader` element intercepts pointer events, causing timeouts if you click the date label
+  - Correct approach: `page.locator('.timeEntry', { hasText: dayLabel }).locator('.timeEntry-entry').click()`
 - Custom "Billable" checkbox is a DIV element - use `.textcheckbox` selector, not `input[type="checkbox"]`
