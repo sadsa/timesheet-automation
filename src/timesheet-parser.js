@@ -42,7 +42,7 @@ async function main() {
 
     try {
       const content = await fs.readFile(filePath, 'utf-8');
-      const tasks = parseNoteFile(content);
+      const tasks = await parseNoteFile(content);
       const billableTasks = filterBillableTasks(tasks);
 
       if (billableTasks.length === 0) {
@@ -57,7 +57,13 @@ async function main() {
 
       console.log(chalk.green(`✓ Found ${billableTasks.length} billable task(s) for ${date}`));
     } catch (error) {
-      console.log(chalk.yellow(`Warning: No daily note found for ${date}, skipping...`));
+      if (error.code === 'ENOENT') {
+        console.log(chalk.yellow(`Warning: No daily note found for ${date}, skipping...`));
+      } else {
+        // Validation errors or other errors - show message and stop
+        console.error(chalk.red(`Error parsing ${date}:`), error.message);
+        throw error;
+      }
     }
   }
 
