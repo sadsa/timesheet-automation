@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import chalk from 'chalk';
-import inquirer from 'inquirer';
 import { parseDateInput } from './lib/date-parser.js';
 import { parseNoteFile } from './lib/note-parser.js';
 import { filterBillableTasks } from './lib/task-filter.js';
-import { loadCategories, promptForCategory, displayDurationSummary, promptDurationAction, editTaskDuration } from './lib/review-ui.js';
+import { displayDurationSummary } from './lib/review-ui.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -74,18 +73,25 @@ async function main() {
 
   console.log(chalk.blue(`\nTotal: ${allTasks.length} billable tasks`));
 
-  // Category selection
-  console.log(chalk.blue('\n--- Category Selection ---'));
-  const categories = await loadCategories();
+  // Validate all tasks have project and category
+  console.log(chalk.blue('\n--- Validating Task Data ---'));
 
-  for (const task of allTasks) {
-    task.category = await promptForCategory(task, categories);
+  const missingData = allTasks.filter(task => !task.project || !task.category);
+
+  if (missingData.length > 0) {
+    console.error(chalk.red('\nError: Some tasks are missing Project or Category:'));
+    missingData.forEach(task => {
+      console.error(chalk.yellow(`  ${task.date}: ${task.description.substring(0, 50)}...`));
+    });
+    console.error(chalk.red('\nPlease update your notes to include Project and Category in pipe-delimited format.'));
+    console.error(chalk.gray('Format: - [ ] TIME - TIME | Project | Category | Ticket | Description'));
+    process.exit(1);
   }
 
-  console.log(chalk.green('\n✓ All tasks categorized'));
+  console.log(chalk.green(`✓ All ${allTasks.length} tasks have Project and Category`));
 
-  // Duration review
-  console.log(chalk.blue('\n--- Duration Review ---'));
+  // Duration review (read-only)
+  console.log(chalk.blue('\n--- Duration Summary ---'));
 
   const tasksByDate = {};
   allTasks.forEach(task => {
@@ -95,31 +101,11 @@ async function main() {
     tasksByDate[task.date].push(task);
   });
 
-  let reviewing = true;
-  while (reviewing) {
-    for (const date of Object.keys(tasksByDate)) {
-      displayDurationSummary(tasksByDate[date], date);
-    }
-
-    const action = await promptDurationAction();
-
-    if (action === 'quit') {
-      console.log(chalk.yellow('Cancelled.'));
-      process.exit(0);
-    } else if (action === 'edit') {
-      const { dateToEdit } = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'dateToEdit',
-          message: 'Which date to edit?',
-          choices: Object.keys(tasksByDate)
-        }
-      ]);
-      await editTaskDuration(tasksByDate[dateToEdit]);
-    } else {
-      reviewing = false;
-    }
+  for (const date of Object.keys(tasksByDate)) {
+    displayDurationSummary(tasksByDate[date], date);
   }
+
+  console.log(chalk.gray('\nNote: To adjust durations, edit your daily notes and re-run the parser.'));
 
   // Generate output
   const outputPath = 'output/timesheet-data.json';
