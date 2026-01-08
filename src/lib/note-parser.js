@@ -23,8 +23,38 @@ export function parseNoteFile(content) {
     if (match) {
       const start = match[1];
       const end = match[2];
-      const description = match[3];
-      const ticket = extractTicket(description);
+      const afterPipe = match[3];
+
+      // Split on pipe and trim all parts
+      const parts = afterPipe.split('|').map(part => part.trim());
+
+      let project = null;
+      let category = null;
+      let ticket = null;
+      let description = null;
+
+      // Detect format based on number of parts
+      if (parts.length >= 3) {
+        // NEW FORMAT: Project | Category | [Ticket |] Description
+        project = parts[0];
+        category = parts[1];
+
+        if (parts.length === 3) {
+          // 3 parts: Project | Category | Description (no ticket)
+          description = parts[2];
+          ticket = null;
+        } else {
+          // 4+ parts: Project | Category | Ticket | Description
+          ticket = parts[2];
+          description = parts[3];
+        }
+      } else {
+        // OLD FORMAT: Just description after first pipe
+        description = afterPipe;
+        ticket = extractTicket(description);
+        project = null;
+        category = null;
+      }
 
       tasks.push({
         start,
@@ -32,6 +62,8 @@ export function parseNoteFile(content) {
         duration: calculateDuration(start, end),
         description,
         ticket,
+        project,
+        category,
         type: ticket ? 'ticket' : 'other'
       });
     }
