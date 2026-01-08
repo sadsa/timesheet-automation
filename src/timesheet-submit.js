@@ -122,7 +122,8 @@ async function main() {
       console.log(chalk.yellow(`  → Selecting project: ${task.project}`));
 
       try {
-        const projectButton = page.locator('.timesheetlistitem').filter({ hasText: task.project });
+        // Use exact match to avoid matching partial project names
+        const projectButton = page.locator('.timesheetlistitem').filter({ hasText: new RegExp(`^${task.project}$`) });
         await projectButton.click();
         currentProject = task.project;
         currentCategory = null; // Reset category when project changes
@@ -142,8 +143,8 @@ async function main() {
       console.log(chalk.yellow(`  → Selecting category: ${task.category}`));
 
       try {
-        // Try visible category first
-        const visibleCategory = page.locator('.row-fluid.timesheet-section .timesheetlistitem').filter({ hasText: task.category });
+        // Try visible category first (use exact match to avoid matching project names)
+        const visibleCategory = page.locator('.row-fluid.timesheet-section .timesheetlistitem').filter({ hasText: new RegExp(`^${task.category}$`) });
         const isVisible = await visibleCategory.count() > 0;
 
         if (isVisible) {
@@ -155,7 +156,8 @@ async function main() {
           await dropdownToggle.click();
           await page.waitForTimeout(200);
 
-          const dropdownCategory = page.locator('ul.dropdown-menu[role="menu"] li a').filter({ hasText: task.category });
+          // Use exact match for dropdown categories
+          const dropdownCategory = page.locator('ul.dropdown-menu[role="menu"] li a').filter({ hasText: new RegExp(`^${task.category}$`) });
           await dropdownCategory.click();
           console.log(chalk.green(`  ✓ Category selected (dropdown)`));
         }
@@ -175,9 +177,11 @@ async function main() {
     const dayLabel = getDayLabel(task.date);
 
     try {
-      const dayElement = page.getByText(dayLabel);
-      // Click at x:200 to hit the gray bar area (not the label)
-      await dayElement.click({ position: { x: 200, y: 10 } });
+      // Find the .timeEntry container for this day and click on its timeline bar
+      // The .timeEntry-infoHeader element blocks clicks, so we must click .timeEntry-entry
+      const timeEntryContainer = page.locator('.timeEntry', { hasText: dayLabel });
+      const timelineBar = timeEntryContainer.locator('.timeEntry-entry');
+      await timelineBar.click();
       await page.waitForTimeout(500); // Wait for form to appear
       console.log(chalk.green(`  ✓ Timeline opened`));
     } catch (error) {

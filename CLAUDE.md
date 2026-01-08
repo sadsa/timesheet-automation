@@ -139,6 +139,9 @@ Uses Node.js built-in test runner (`node:test`). Test files in `tests/` director
 - If validation fails with "missing Project or Category", ensure all tasks use the pipe-delimited format with Project and Category
 - If validation fails with "invalid Project or Category", verify the values exist in `config/projects-categories.json`
 - If duration totals are incorrect, check time parsing in `calculateDuration()` (uses date-fns)
-- If browser automation fails to find elements, the portal's UI may have changed - see `FORM_SELECTORS.md` for current selectors
-- Timeline clicks must target the gray bar area (not the day label) to open the time entry form
+- If browser automation fails to find elements, the portal's UI may have changed
+- **Timeline interaction**: Must click on `.timeEntry-entry` element (the gray timeline bar), NOT the date label
+  - DOM structure: `DIV.timeEntry` contains `DIV.timeEntry-infoHeader` (blocks clicks!) and `DIV.timeEntry-entry` (clickable)
+  - The `.timeEntry-infoHeader` element intercepts pointer events, causing timeouts if you click the date label
+  - Correct approach: `page.locator('.timeEntry', { hasText: dayLabel }).locator('.timeEntry-entry').click()`
 - Custom "Billable" checkbox is a DIV element - use `.textcheckbox` selector, not `input[type="checkbox"]`
