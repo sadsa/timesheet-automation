@@ -8,11 +8,6 @@ function calculateDuration(startTime, endTime) {
   return minutes / 60;
 }
 
-function extractTicket(description) {
-  const ticketMatch = description.match(/ENTELECT-\d+/);
-  return ticketMatch ? ticketMatch[0] : null;
-}
-
 export function parseNoteFile(content) {
   const lines = content.split('\n');
   const taskRegex = /- \[ \] (\d{1,2}:\d{2} [AP]M) - (\d{1,2}:\d{2} [AP]M) \| (.+)/;
@@ -28,33 +23,34 @@ export function parseNoteFile(content) {
       // Split on pipe and trim all parts
       const parts = afterPipe.split('|').map(part => part.trim());
 
-      let project = null;
-      let category = null;
+      // NEW FORMAT REQUIRED: Project | Category | [Ticket |] Description
+      if (parts.length < 3) {
+        throw new Error(`Invalid task format: "${line}". Expected format: "Project | Category | [Ticket |] Description"`);
+      }
+
+      const project = parts[0];
+      const category = parts[1];
+
+      // Validate if parts[2] is a ticket using ENTELECT-XXXX pattern
+      const ticketPattern = /^ENTELECT-\d+$/;
+      const hasTicket = parts.length >= 4 && ticketPattern.test(parts[2]);
+
       let ticket = null;
       let description = null;
 
-      // Detect format based on number of parts
-      if (parts.length >= 3) {
-        // NEW FORMAT: Project | Category | [Ticket |] Description
-        project = parts[0];
-        category = parts[1];
-
-        if (parts.length === 3) {
-          // 3 parts: Project | Category | Description (no ticket)
-          description = parts[2];
-          ticket = null;
-        } else {
-          // 4+ parts: Project | Category | Ticket | Description
-          ticket = parts[2];
-          description = parts[3];
-        }
+      if (hasTicket) {
+        // 4+ parts with valid ticket: Project | Category | Ticket | Description
+        ticket = parts[2];
+        description = parts[3];
       } else {
-        // OLD FORMAT: Just description after first pipe
-        description = afterPipe;
-        ticket = extractTicket(description);
-        project = null;
-        category = null;
+        // 3 parts (no ticket): Project | Category | Description
+        description = parts[2];
+        ticket = null;
       }
+
+      // Detect meeting type from description keywords
+      const meetingKeywords = /MEETING|zoom|call|DSU|standup|sync/i;
+      const isMeeting = meetingKeywords.test(description);
 
       tasks.push({
         start,
@@ -64,7 +60,7 @@ export function parseNoteFile(content) {
         ticket,
         project,
         category,
-        type: ticket ? 'ticket' : 'other'
+        type: ticket ? 'ticket' : (isMeeting ? 'meeting' : 'other')
       });
     }
   }
