@@ -99,9 +99,9 @@ export async function parseNoteFile(content) {
         ticket = null;
       }
 
-      // Detect meeting type from description keywords
+      // Detect meeting type from description keywords OR category field
       const meetingKeywords = /MEETING|zoom|call|DSU|standup|sync/i;
-      const isMeeting = meetingKeywords.test(description);
+      const isMeeting = meetingKeywords.test(description) || category.toLowerCase() === 'meetings';
 
       const task = {
         start,
