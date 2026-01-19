@@ -58,3 +58,38 @@ test('distributeGap - returns original tasks when no selection', () => {
   assert.strictEqual(result[0].duration, 2);
   assert.strictEqual(result[1].duration, 3);
 });
+
+test('distributeGap - rounds to 0.25h and assigns remainder to first task', () => {
+  const tasks = [
+    { duration: 2, description: 'Task A' },
+    { duration: 2, description: 'Task B' },
+    { duration: 2, description: 'Task C' }
+  ];
+  const selectedIndices = [0, 1, 2];
+  const gap = 1; // 1h / 3 = 0.333... → rounds to 0.25 each, 0.25 remainder
+
+  const result = distributeGap(tasks, selectedIndices, gap);
+
+  // First task gets extra remainder: 0.25 + 0.25 = 0.5
+  assert.strictEqual(result[0].duration, 2.5);
+  assert.strictEqual(result[1].duration, 2.25);
+  assert.strictEqual(result[2].duration, 2.25);
+
+  // Total should still equal 7h (6 original + 1 gap)
+  const total = result.reduce((sum, t) => sum + t.duration, 0);
+  assert.strictEqual(total, 7);
+});
+
+test('distributeGap - handles exact division without remainder', () => {
+  const tasks = [
+    { duration: 3, description: 'Task A' },
+    { duration: 3, description: 'Task B' }
+  ];
+  const selectedIndices = [0, 1];
+  const gap = 2; // 2h / 2 = 1h each, no remainder
+
+  const result = distributeGap(tasks, selectedIndices, gap);
+
+  assert.strictEqual(result[0].duration, 4);
+  assert.strictEqual(result[1].duration, 4);
+});

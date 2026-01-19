@@ -11,12 +11,20 @@ export function distributeGap(tasks, selectedIndices, gap) {
     return tasks;
   }
 
-  const perTask = gap / selectedIndices.length;
+  const rawPerTask = gap / selectedIndices.length;
+  const roundedPerTask = Math.floor(rawPerTask * 4) / 4; // Round down to 0.25
+  const distributed = roundedPerTask * selectedIndices.length;
+  const remainder = gap - distributed;
 
   return tasks.map((task, index) => {
-    if (selectedIndices.includes(index)) {
-      return { ...task, duration: task.duration + perTask };
+    if (!selectedIndices.includes(index)) {
+      return { ...task };
     }
-    return { ...task };
+
+    // First selected task gets the remainder
+    const isFirstSelected = index === selectedIndices[0];
+    const addition = isFirstSelected ? roundedPerTask + remainder : roundedPerTask;
+
+    return { ...task, duration: task.duration + addition };
   });
 }
