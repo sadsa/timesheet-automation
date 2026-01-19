@@ -28,3 +28,7 @@ export function distributeGap(tasks, selectedIndices, gap) {
     return { ...task, duration: task.duration + addition };
   });
 }
+
+export function calculateTotal(tasks) {
+  return tasks.reduce((sum, t) => sum + t.duration, 0);
+}

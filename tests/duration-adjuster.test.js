@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { calculateGap, distributeGap } from '../src/lib/duration-adjuster.js';
+import { calculateGap, distributeGap, calculateTotal } from '../src/lib/duration-adjuster.js';
 
 test('calculateGap - returns hours needed to reach 8h', () => {
   const tasks = [
@@ -92,4 +92,13 @@ test('distributeGap - handles exact division without remainder', () => {
 
   assert.strictEqual(result[0].duration, 4);
   assert.strictEqual(result[1].duration, 4);
+});
+
+test('calculateTotal - sums task durations', () => {
+  const tasks = [{ duration: 2 }, { duration: 0.5 }, { duration: 3 }];
+  assert.strictEqual(calculateTotal(tasks), 5.5);
+});
+
+test('calculateTotal - returns 0 for empty array', () => {
+  assert.strictEqual(calculateTotal([]), 0);
 });
