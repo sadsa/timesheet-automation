@@ -39,25 +39,24 @@ export async function promptForAdjustment(tasks, date) {
   const total = calculateTotal(tasks);
   const gap = calculateGap(tasks);
 
-  // Skip if already at or over 8h
   if (gap === 0) {
     return tasks;
   }
 
   console.log(chalk.yellow(`\n${gap}h to distribute to reach 8h`));
+  console.log(chalk.gray('(Time added per task depends on number selected)\n'));
 
   const choices = tasks.map((task, index) => {
     const ticketOrType = task.ticket || `[${task.type}]`;
-    const preview = task.duration + gap; // Preview if only this task selected
     return {
-      name: `${ticketOrType} - ${task.description.substring(0, 40)}... (${task.duration}h → ${preview}h)`,
+      name: `${ticketOrType} - ${task.description.substring(0, 40)}... (${task.duration}h)`,
       value: index
     };
   });
 
   try {
     const selectedIndices = await checkbox({
-      message: `Select tasks to round up (q to skip):`,
+      message: `Select tasks to round up (${gap}h to distribute):`,
       choices,
       instructions: false
     });
@@ -68,16 +67,16 @@ export async function promptForAdjustment(tasks, date) {
     }
 
     const adjustedTasks = distributeGap(tasks, selectedIndices, gap);
+    const perTask = gap / selectedIndices.length;
 
-    // Show adjusted summary
-    console.log(chalk.green('\n--- Adjusted ---'));
+    console.log(chalk.green(`\n+${perTask.toFixed(2)}h added to ${selectedIndices.length} task(s)`));
+    console.log(chalk.green('\n--- Adjusted Summary ---'));
     displayDurationSummary(adjustedTasks, date);
 
     return adjustedTasks;
 
   } catch (error) {
-    // User pressed q or Ctrl+C
-    if (error.message?.includes('User force closed')) {
+    if (error.message?.includes('User force closed') || error.name === 'ExitPromptError') {
       console.log(chalk.gray('\nSkipped adjustment'));
       return tasks;
     }
