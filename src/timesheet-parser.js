@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { parseDateInput } from './lib/date-parser.js';
 import { parseNoteFile } from './lib/note-parser.js';
 import { filterBillableTasks } from './lib/task-filter.js';
-import { displayDurationSummary } from './lib/review-ui.js';
+import { displayDurationSummary, promptForAdjustment } from './lib/review-ui.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -36,30 +36,51 @@ async function main() {
   const notesDir = process.env.NOTES_DIR || '/Users/entelect-jbiddick/Documents/Personal';
   const allTasks = [];
 
+  // Process each day sequentially with adjustment
   for (const date of dates) {
     const filePath = path.join(notesDir, `${date}.md`);
 
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const tasks = await parseNoteFile(content);
-      const billableTasks = filterBillableTasks(tasks);
+      let billableTasks = filterBillableTasks(tasks);
 
       if (billableTasks.length === 0) {
         console.log(chalk.yellow(`Warning: No billable tasks found for ${date}`));
         continue;
       }
 
+      // Add date to each task
       billableTasks.forEach(task => {
         task.date = date;
-        allTasks.push(task);
       });
 
-      console.log(chalk.green(`✓ Found ${billableTasks.length} billable task(s) for ${date}`));
+      // Validate tasks have project and category
+      const missingData = billableTasks.filter(task => !task.project || !task.category);
+      if (missingData.length > 0) {
+        console.error(chalk.red(`\nError: Tasks missing Project or Category for ${date}:`));
+        missingData.forEach(task => {
+          console.error(chalk.yellow(`  ${task.description.substring(0, 50)}...`));
+        });
+        console.error(chalk.gray('Format: - [ ] TIME - TIME | Project | Category | Ticket | Description'));
+        process.exit(1);
+      }
+
+      // Display summary
+      console.log(chalk.blue(`\n--- Duration Summary ---`));
+      displayDurationSummary(billableTasks, date);
+
+      // Interactive adjustment (skips if >= 8h)
+      billableTasks = await promptForAdjustment(billableTasks, date);
+
+      allTasks.push(...billableTasks);
+
+      console.log(chalk.green(`\n✓ Processed ${date}`));
+
     } catch (error) {
       if (error.code === 'ENOENT') {
         console.log(chalk.yellow(`Warning: No daily note found for ${date}, skipping...`));
       } else {
-        // Validation errors or other errors - show message and stop
         console.error(chalk.red(`Error parsing ${date}:`), error.message);
         throw error;
       }
@@ -70,42 +91,6 @@ async function main() {
     console.log(chalk.red('No billable tasks found in any dates.'));
     process.exit(0);
   }
-
-  console.log(chalk.blue(`\nTotal: ${allTasks.length} billable tasks`));
-
-  // Validate all tasks have project and category
-  console.log(chalk.blue('\n--- Validating Task Data ---'));
-
-  const missingData = allTasks.filter(task => !task.project || !task.category);
-
-  if (missingData.length > 0) {
-    console.error(chalk.red('\nError: Some tasks are missing Project or Category:'));
-    missingData.forEach(task => {
-      console.error(chalk.yellow(`  ${task.date}: ${task.description.substring(0, 50)}...`));
-    });
-    console.error(chalk.red('\nPlease update your notes to include Project and Category in pipe-delimited format.'));
-    console.error(chalk.gray('Format: - [ ] TIME - TIME | Project | Category | Ticket | Description'));
-    process.exit(1);
-  }
-
-  console.log(chalk.green(`✓ All ${allTasks.length} tasks have Project and Category`));
-
-  // Duration review (read-only)
-  console.log(chalk.blue('\n--- Duration Summary ---'));
-
-  const tasksByDate = {};
-  allTasks.forEach(task => {
-    if (!tasksByDate[task.date]) {
-      tasksByDate[task.date] = [];
-    }
-    tasksByDate[task.date].push(task);
-  });
-
-  for (const date of Object.keys(tasksByDate)) {
-    displayDurationSummary(tasksByDate[date], date);
-  }
-
-  console.log(chalk.gray('\nNote: To adjust durations, edit your daily notes and re-run the parser.'));
 
   // Generate output
   const outputPath = 'output/timesheet-data.json';
