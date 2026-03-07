@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { execSync } from 'node:child_process';
+import { parseEvents } from '../src/lib/gh-event-parser.js';
 
 const date = process.argv[2];
 
@@ -44,4 +45,5 @@ function fetchEventsForDate(username, targetDate) {
 const user = ghApi('/user');
 const rawEvents = fetchEventsForDate(user.login, date);
 
-console.log(JSON.stringify(rawEvents, null, 2));
+const structured = parseEvents(rawEvents);
+console.log(JSON.stringify(structured, null, 2));
