@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Usage: node scripts/gh-activity.js <YYYY-MM-DD>
+import { execSync } from 'node:child_process';
 
 const date = process.argv[2];
 
@@ -8,4 +8,35 @@ if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
   process.exit(1);
 }
 
-console.log(JSON.stringify([]));
+function ghApi(path) {
+  const result = execSync(`gh api "${path}"`, { encoding: 'utf8' });
+  return JSON.parse(result);
+}
+
+function fetchEventsForDate(username, targetDate) {
+  const events = [];
+  let page = 1;
+
+  while (true) {
+    const pageEvents = ghApi(`/users/${username}/events?per_page=100&page=${page}`);
+    if (pageEvents.length === 0) break;
+
+    for (const event of pageEvents) {
+      const eventDate = event.created_at.slice(0, 10);
+      if (eventDate === targetDate) {
+        events.push(event);
+      } else if (eventDate < targetDate) {
+        return events;
+      }
+    }
+
+    page++;
+  }
+
+  return events;
+}
+
+const user = ghApi('/user');
+const rawEvents = fetchEventsForDate(user.login, date);
+
+console.log(JSON.stringify(rawEvents, null, 2));
