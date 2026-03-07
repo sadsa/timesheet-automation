@@ -23,7 +23,7 @@ export function parseEvent(event) {
       const commits = event.payload?.commits ?? [];
       const messages = commits.map(c => c.message).join(' ');
       const ticket = extractTicket(messages, event.repo?.name);
-      const description = commits.map(c => c.message.split('\n')[0]).join('; ');
+      const description = commits.map(c => (c.message ?? '').split('\n')[0]).filter(Boolean).join('; ');
       return { ...base, type: 'commit', ticket, description };
     }
 
@@ -44,7 +44,7 @@ export function parseEvent(event) {
 
     case 'IssueCommentEvent': {
       const issue = event.payload?.issue;
-      const ticket = extractTicket(issue?.title, String(issue?.number ?? ''));
+      const ticket = extractTicket(issue?.title);
       const description = `Comment on: ${issue?.title}`;
       return { ...base, type: 'comment', ticket, description };
     }
@@ -65,5 +65,5 @@ export function parseEvents(rawEvents) {
   return rawEvents
     .map(parseEvent)
     .filter(Boolean)
-    .sort((a, b) => a.time.localeCompare(b.time));
+    .sort((a, b) => new Date(a.time) - new Date(b.time));
 }
