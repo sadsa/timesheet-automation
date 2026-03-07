@@ -9,8 +9,13 @@ if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
 }
 
 function ghApi(path) {
-  const result = execSync(`gh api "${path}"`, { encoding: 'utf8' });
-  return JSON.parse(result);
+  try {
+    const result = execSync(`gh api "${path}"`, { encoding: 'utf8' });
+    return JSON.parse(result);
+  } catch (err) {
+    console.error(`gh api failed for ${path}:\n${err.stderr ?? err.message}`);
+    process.exit(1);
+  }
 }
 
 function fetchEventsForDate(username, targetDate) {
