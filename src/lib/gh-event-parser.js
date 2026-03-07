@@ -31,14 +31,16 @@ export function parseEvent(event) {
       const pr = event.payload?.pull_request;
       const ticket = extractTicket(pr?.title, pr?.head?.ref, pr?.body);
       const action = event.payload?.action;
-      const description = `${action === 'closed' && pr?.merged ? 'Merged' : action} PR: ${pr?.title}`;
+      const prLabel = pr?.title ?? pr?.head?.ref ?? 'unknown PR';
+      const description = `${action === 'closed' && pr?.merged ? 'Merged' : action} PR: ${prLabel}`;
       return { ...base, type: 'pr', ticket, description };
     }
 
     case 'PullRequestReviewEvent': {
       const pr = event.payload?.pull_request;
       const ticket = extractTicket(pr?.title, pr?.head?.ref);
-      const description = `Reviewed PR: ${pr?.title}`;
+      const prLabel = pr?.title ?? pr?.head?.ref ?? 'unknown PR';
+      const description = `Reviewed PR: ${prLabel}`;
       return { ...base, type: 'review', ticket, description };
     }
 
@@ -52,7 +54,8 @@ export function parseEvent(event) {
     case 'PullRequestReviewCommentEvent': {
       const pr = event.payload?.pull_request;
       const ticket = extractTicket(pr?.title, pr?.head?.ref);
-      const description = `Review comment on PR: ${pr?.title}`;
+      const prLabel = pr?.title ?? pr?.head?.ref ?? 'unknown PR';
+      const description = `Review comment on PR: ${prLabel}`;
       return { ...base, type: 'review-comment', ticket, description };
     }
 
