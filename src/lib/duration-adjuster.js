@@ -1,5 +1,12 @@
 const TARGET_HOURS = 8;
 
+const STANDUP_KEYWORDS = ['dsu', 'standup', 'stand-up', 'stand up', 'sync'];
+
+export function isStandup(task) {
+  const desc = (task.description || '').toLowerCase();
+  return STANDUP_KEYWORDS.some(kw => desc.includes(kw));
+}
+
 export function calculateGap(tasks) {
   const total = tasks.reduce((sum, t) => sum + t.duration, 0);
   const gap = TARGET_HOURS - total;
@@ -27,6 +34,19 @@ export function distributeGap(tasks, selectedIndices, gap) {
 
     return { ...task, duration: task.duration + addition };
   });
+}
+
+export function autoDistributeGap(tasks, gap) {
+  const eligibleIndices = tasks
+    .map((task, index) => ({ task, index }))
+    .filter(({ task }) => !isStandup(task))
+    .map(({ index }) => index);
+
+  if (eligibleIndices.length === 0) {
+    throw new Error('Cannot auto-adjust: all tasks are standup meetings. No eligible tasks to distribute gap to.');
+  }
+
+  return distributeGap(tasks, eligibleIndices, gap);
 }
 
 export function calculateTotal(tasks) {

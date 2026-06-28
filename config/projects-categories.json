@@ -4,13 +4,22 @@
     "Hubspot Data App Software Dev",
     "Hubspot Data App Analysis",
     "Hubspot Data App Dev Support",
+    "Snowflake Dev support",
+    "Snowflake Software Dev",
     "Salesforce Data App Analysis",
     "Google Analytics Software Dev",
+    "World Bank Data App Dev Support",
+    "Teams App Software Dev",
     "OneDrive",
+    "BigQuery",
     "Other"
   ],
   "R - Canva Maintenance": [
-    "Google Drive"
+    "Google Drive",
+    "Google Photos",
+    "Slack Integration Dev Support",
+    "Slack Integration Maint Software Dev",
+    "DropBox"
   ],
   "Meetings and Reviews (NZ)": [
     "Client Interview",
@@ -18,6 +27,8 @@
     "Entelect Knowledge Sharing Meeting",
     "New Employee Induction",
     "One On One Attendance",
+    "Online Review Capture",
+    "Business Development",
     "Townhall",
     "Other"
   ],

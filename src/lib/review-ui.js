@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import checkbox from '@inquirer/checkbox';
-import { calculateGap, distributeGap, calculateTotal } from './duration-adjuster.js';
+import { calculateGap, distributeGap, calculateTotal, autoDistributeGap } from './duration-adjuster.js';
 
 export function displayDurationSummary(tasks, date) {
   console.log(chalk.yellow(`\n=== ${date} ===`));
@@ -33,6 +33,20 @@ export function displayDurationSummary(tasks, date) {
   console.log(chalk.bold(`\nTotal: ${total}h${warning}`));
 
   return total;
+}
+
+export function autoAdjust(tasks, date) {
+  const gap = calculateGap(tasks);
+
+  if (gap === 0) {
+    console.log(chalk.green('Total already 8h, no adjustment needed'));
+    return tasks;
+  }
+
+  const adjusted = autoDistributeGap(tasks, gap);
+  console.log(chalk.green(`\nAuto-distributed ${gap}h across eligible tasks`));
+  displayDurationSummary(adjusted, date);
+  return adjusted;
 }
 
 export async function promptForAdjustment(tasks, date) {

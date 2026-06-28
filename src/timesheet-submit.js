@@ -60,9 +60,10 @@ async function main() {
   console.log(chalk.blue('Timesheet Submission Automation\n'));
 
   // Load timesheet data
+  const dataPath = 'output/timesheet-data.json';
   let tasks;
   try {
-    const data = await fs.readFile('output/timesheet-data.json', 'utf-8');
+    const data = await fs.readFile(dataPath, 'utf-8');
     tasks = JSON.parse(data);
   } catch (error) {
     console.error(chalk.red('Error loading timesheet data:'), error.message);
@@ -70,6 +71,10 @@ async function main() {
     process.exit(1);
   }
 
+  const alreadySubmitted = tasks.filter(t => t.submitted).length;
+  if (alreadySubmitted > 0) {
+    console.log(chalk.gray(`${alreadySubmitted} task(s) already submitted — will skip`));
+  }
   console.log(`Loaded ${tasks.length} task(s)`);
 
   // Validate task structure
@@ -98,7 +103,7 @@ async function main() {
   const page = context.pages()[0] || await context.newPage();
 
   // Navigate to timesheet portal
-  await page.goto('https://employee.entelect.co.nz/Timesheet');
+  await page.goto('https://employee.entelect.co.za/Timesheet');
 
   await waitForEnter('Log in if needed, then press Enter to start automation...');
 
@@ -111,6 +116,13 @@ async function main() {
   // Process each task
   for (let i = 0; i < tasks.length; i++) {
     const task = tasks[i];
+
+    if (task.submitted) {
+      const label = task.ticket || task.description.substring(0, 40);
+      console.log(chalk.gray(`\n[${i + 1}/${tasks.length}] Skipping ${label} — already submitted`));
+      continue;
+    }
+
     console.log(chalk.blue(`\n[${i + 1}/${tasks.length}] Processing task:`));
     console.log(chalk.gray(`  Date: ${task.date}`));
     console.log(chalk.gray(`  Project: ${task.project}`));
@@ -222,15 +234,23 @@ async function main() {
     // Step 5: Save entry
     console.log(chalk.yellow(`  → Saving entry...`));
 
+    let saved = false;
     try {
       const saveButton = page.locator('button.save');
       await saveButton.click();
       await page.waitForTimeout(500); // Wait for save to complete
       console.log(chalk.green(`  ✓ Entry saved`));
+      saved = true;
     } catch (error) {
       console.error(chalk.red(`  ✗ Failed to save entry: ${error.message}`));
       console.log(chalk.yellow(`  Please manually click Save and press Enter`));
       await waitForEnter('Press Enter after saving...');
+      saved = true; // User confirmed manual save
+    }
+
+    if (saved) {
+      tasks[i] = { ...task, submitted: true };
+      await fs.writeFile(dataPath, JSON.stringify(tasks, null, 2));
     }
   }
 

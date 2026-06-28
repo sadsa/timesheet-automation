@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { parseDateInput } from './lib/date-parser.js';
 import { parseNoteFile } from './lib/note-parser.js';
 import { filterBillableTasks } from './lib/task-filter.js';
-import { displayDurationSummary, promptForAdjustment } from './lib/review-ui.js';
+import { displayDurationSummary, promptForAdjustment, autoAdjust } from './lib/review-ui.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -16,6 +16,7 @@ program
   .option('-d, --date <date>', 'Single date (YYYY-MM-DD)')
   .option('-r, --range <range>', 'Date range (YYYY-MM-DD:YYYY-MM-DD)')
   .option('-w, --week <week>', 'Week shorthand (e.g., "last")')
+  .option('-a, --auto', 'Auto-distribute gap to 8h across non-standup tasks')
   .parse();
 
 const options = program.opts();
@@ -70,8 +71,12 @@ async function main() {
       console.log(chalk.blue(`\n--- Duration Summary ---`));
       displayDurationSummary(billableTasks, date);
 
-      // Interactive adjustment (skips if >= 8h)
-      billableTasks = await promptForAdjustment(billableTasks, date);
+      // Adjustment: auto or interactive
+      if (options.auto) {
+        billableTasks = autoAdjust(billableTasks, date);
+      } else {
+        billableTasks = await promptForAdjustment(billableTasks, date);
+      }
 
       allTasks.push(...billableTasks);
 
