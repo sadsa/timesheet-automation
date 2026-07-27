@@ -4,8 +4,7 @@ import { filterBillableTasks } from '../src/lib/task-filter.js';
 
 test('filterBillableTasks - include ENTELECT tickets', () => {
   const tasks = [
-    { description: 'ENTELECT-1834 - Test', type: 'ticket', ticket: 'ENTELECT-1834' },
-    { description: 'Personal task', type: 'other', ticket: null }
+    { description: 'ENTELECT-1834 - Test', type: 'ticket', ticket: 'ENTELECT-1834' }
   ];
 
   const result = filterBillableTasks(tasks);
@@ -14,18 +13,29 @@ test('filterBillableTasks - include ENTELECT tickets', () => {
   assert.strictEqual(result[0].ticket, 'ENTELECT-1834');
 });
 
-test('filterBillableTasks - include meeting keywords', () => {
+test('filterBillableTasks - tag meetings by keyword', () => {
   const tasks = [
     { description: 'DSU Zoom', type: 'other', ticket: null },
     { description: 'MEETING with client', type: 'other', ticket: null },
-    { description: 'Standup call', type: 'other', ticket: null },
-    { description: 'Personal task', type: 'other', ticket: null }
+    { description: 'Standup call', type: 'other', ticket: null }
   ];
 
   const result = filterBillableTasks(tasks);
 
   assert.strictEqual(result.length, 3);
-  assert.strictEqual(result[0].type, 'meeting');
+  assert.ok(result.every(task => task.type === 'meeting'));
+});
+
+test('filterBillableTasks - keep ticketless, non-meeting work', () => {
+  const tasks = [
+    { description: 'Cap Jira JQL searches to cut MCP token usage', type: 'other', ticket: null },
+    { description: 'Keep a single coverage comment per PR', type: 'other', ticket: null }
+  ];
+
+  const result = filterBillableTasks(tasks);
+
+  assert.strictEqual(result.length, 2);
+  assert.strictEqual(result[0].type, 'other');
 });
 
 test('filterBillableTasks - exclude lunch and breaks', () => {

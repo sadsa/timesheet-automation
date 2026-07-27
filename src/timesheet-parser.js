@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { parseDateInput } from './lib/date-parser.js';
 import { parseNoteFile } from './lib/note-parser.js';
 import { filterBillableTasks } from './lib/task-filter.js';
+import { resolveNotePath, noteCandidates } from './lib/note-path.js';
 import { displayDurationSummary, promptForAdjustment, autoAdjust } from './lib/review-ui.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -39,7 +40,13 @@ async function main() {
 
   // Process each day sequentially with adjustment
   for (const date of dates) {
-    const filePath = path.join(notesDir, `${date}.md`);
+    const filePath = await resolveNotePath(notesDir, date);
+
+    if (!filePath) {
+      console.log(chalk.yellow(`Warning: No daily note found for ${date}, skipping...`));
+      console.log(chalk.gray(`  Looked in: ${noteCandidates(notesDir, date).join(', ')}`));
+      continue;
+    }
 
     try {
       const content = await fs.readFile(filePath, 'utf-8');

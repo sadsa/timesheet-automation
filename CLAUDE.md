@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Domain
+
+`CONTEXT.md` is the glossary for this project — read it before introducing new terms.
+Architectural decisions live in `docs/adr/`.
+
 ## Project Overview
 
 A Node.js CLI tool that automates timesheet entry to the Entelect portal by parsing Obsidian daily note files. The workflow is two-phase:
@@ -70,9 +75,11 @@ The parser automatically detects ticket numbers (ENTELECT-XXXX pattern) anywhere
 
 ### Filtering Logic (task-filter.js)
 
-Billable tasks are identified by:
-- **Include**: Tasks with JIRA tickets (ENTELECT-XXXX) or meeting keywords (MEETING, zoom, call, DSU, standup, sync)
+Everything in a daily note is billable **except** lunch and breaks. A ticket number is
+not required — see `docs/adr/0002-billable-work-needs-no-ticket.md`.
 - **Exclude**: Tasks with lunch/break keywords
+- **Tag as `meeting`**: Tasks with meeting keywords (MEETING, zoom, call, DSU, standup, sync) or category `Meetings`
+- **Keep as-is**: Everything else, ticket or not
 
 ### Review Summary (review-ui.js)
 
@@ -126,7 +133,7 @@ Uses Playwright persistent context with a **dedicated automation profile** (sepa
 ## Environment Variables
 
 Configure via `.env` file (see `.env.example`):
-- `NOTES_DIR`: Path to Obsidian vault (default: `/Users/entelect-jbiddick/Documents/Personal`)
+- `NOTES_DIR`: Path to the Obsidian vault **root** (default: `/Users/entelect-jbiddick/Documents/Personal`). Not the notes folder itself — `note-path.js` resolves `Daily Plans/{year}/{spanish-month}/{date}.md` beneath it, falling back to a flat `{date}.md` at the root for legacy notes. See `docs/adr/0001-daily-note-location.md`.
 - `CHROME_USER_DATA`: Path to Chrome user data directory for session reuse
 
 ## Testing

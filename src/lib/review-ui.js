@@ -44,7 +44,20 @@ export function autoAdjust(tasks, date) {
   }
 
   const adjusted = autoDistributeGap(tasks, gap);
-  console.log(chalk.green(`\nAuto-distributed ${gap}h across eligible tasks`));
+  console.log(chalk.green(`\nAuto-distributed ${gap}h across eligible tasks:`));
+
+  // Name every task that absorbed padding — an unattributed bump silently
+  // inflates whichever ticket happened to be eligible.
+  adjusted.forEach((task, index) => {
+    const added = task.duration - tasks[index].duration;
+    if (added === 0) return;
+    const label = task.ticket || `[${task.type}]`;
+    console.log(chalk.gray(
+      `  +${added}h  ${label} - ${task.description.substring(0, 50)} ` +
+      `(${tasks[index].duration}h → ${task.duration}h)`
+    ));
+  });
+
   displayDurationSummary(adjusted, date);
   return adjusted;
 }
