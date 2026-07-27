@@ -91,13 +91,24 @@ test('parseNoteFile - detect meeting type from keywords', async () => {
 });
 
 test('parseNoteFile - invalid ticket format treated as description (4 parts but not ENTELECT-XXXX)', async () => {
-  const content = `- [ ] 9:00 AM - 10:00 AM | R - Canva - Agile Team | Meetings | INVALID-123 | Description`;
+  // Deliberately not the Meetings category: that would type the task as a
+  // meeting on its own, masking the ticket fallback this test covers.
+  const content = `- [ ] 9:00 AM - 10:00 AM | R - Canva - Agile Team | Teams App Software Dev | INVALID-123 | Description`;
 
   const result = await parseNoteFile(content);
 
   assert.strictEqual(result[0].ticket, null);
   assert.strictEqual(result[0].description, 'INVALID-123'); // parts[2] becomes description
   assert.strictEqual(result[0].type, 'other');
+});
+
+test('parseNoteFile - Meetings category types a task as a meeting regardless of description', async () => {
+  const content = `- [ ] 9:00 AM - 10:00 AM | R - Canva - Agile Team | Meetings | Quarterly planning`;
+
+  const result = await parseNoteFile(content);
+
+  assert.strictEqual(result[0].type, 'meeting');
+  assert.strictEqual(result[0].ticket, null);
 });
 
 test('parseNoteFile - error on old format (missing project and category)', async () => {
