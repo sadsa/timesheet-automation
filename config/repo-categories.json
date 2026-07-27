@@ -1,0 +1,14 @@
+{
+  "canva-teams-integration": {
+    "project": "R - Canva - Agile Team",
+    "category": "Teams App Software Dev"
+  },
+  "google-photos": {
+    "project": "R - Canva Maintenance",
+    "category": "Google Photos"
+  },
+  "google-drive": {
+    "project": "R - Canva Maintenance",
+    "category": "Google Drive"
+  }
+}
