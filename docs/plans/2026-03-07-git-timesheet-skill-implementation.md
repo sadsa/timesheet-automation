@@ -345,9 +345,9 @@ You are helping fill in missing timesheet entries in daily plan markdown files b
 
 ## Setup
 
-- Timesheet automation repo: `/Users/entelect-jbiddick/Documents/Personal/timesheet-automation`
+- Timesheet automation repo: `/Users/entelect-jbiddick/Projects/timesheet-automation`
 - Daily plans directory: `/Users/entelect-jbiddick/Documents/Personal/Daily Plans`
-- Valid projects/categories: `/Users/entelect-jbiddick/Documents/Personal/timesheet-automation/config/projects-categories.json`
+- Valid projects/categories: `/Users/entelect-jbiddick/Projects/timesheet-automation/config/projects-categories.json`
 
 ## Step 1: Detect Incomplete Days
 
@@ -371,7 +371,7 @@ Report which days need entries before proceeding.
 For each incomplete day, run:
 
 ```bash
-node /Users/entelect-jbiddick/Documents/Personal/timesheet-automation/scripts/gh-activity.js <YYYY-MM-DD>
+node /Users/entelect-jbiddick/Projects/timesheet-automation/scripts/gh-activity.js <YYYY-MM-DD>
 ```
 
 This outputs a JSON array of activity events: `{ time, type, repo, ticket, description }`.

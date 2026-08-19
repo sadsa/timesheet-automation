@@ -7,7 +7,7 @@ description: Retrospectively generates daily timesheet markdown files from GitHu
 
 Generates Daily Plan markdown files from GitHub PR activity for a date range.
 
-## Config (~/Documents/Personal/timesheet-automation/config/)
+## Config (~/Projects/timesheet-automation/config/)
 
 | File | Purpose |
 |------|---------|
