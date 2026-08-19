@@ -10,5 +10,9 @@
   "google-drive": {
     "project": "R - Canva Maintenance",
     "category": "Google Drive"
+  },
+  "one-drive": {
+    "project": "R - Canva - Agile Team",
+    "category": "OneDrive"
   }
 }
