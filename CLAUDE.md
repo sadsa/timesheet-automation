@@ -29,6 +29,7 @@ notes from it; that whole phase was deleted. See
 # Install dependencies
 npm install
 npx playwright install chromium
+# submit uses channel: 'chrome' — real Google Chrome must also be installed
 
 # Generate (in Claude Code): /generate-timesheet last week
 

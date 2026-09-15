@@ -5,7 +5,7 @@
   "main": "src/timesheet-submit.js",
   "type": "module",
   "scripts": {
-    "submit": "node src/timesheet-submit.js",
+    "submit": "node --env-file-if-exists=.env src/timesheet-submit.js",
     "test": "node --test"
   },
   "dependencies": {
