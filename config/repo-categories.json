@@ -1,6 +1,6 @@
 {
   "canva-teams-integration": {
-    "project": "R - Canva - Agile Team",
+    "project": "FP - Canva - Agile",
     "category": "Teams App Software Dev"
   },
   "google-photos": {
@@ -14,5 +14,9 @@
   "one-drive": {
     "project": "R - Canva - Agile Team",
     "category": "OneDrive"
+  },
+  "canva-rovo-ai-agent": {
+    "project": "R - Canva - Agile Team",
+    "category": "Other"
   }
 }
