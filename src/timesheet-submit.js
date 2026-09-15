@@ -3,8 +3,12 @@
  * Timesheet Submission Automation
  *
  * Automates timesheet entry to the Entelect portal using Playwright.
- * Reads structured task data from output/timesheet-data.json and fills
- * the web form automatically.
+ * Reads structured task data from output/timesheet-data.json (written by the
+ * generate-timesheet skill) and fills the web form automatically.
+ *
+ * Interactive by design: every failure path stops and asks a human to fix the
+ * step by hand. Do not run this unattended — pressing Enter at those prompts
+ * asserts that someone intervened.
  *
  * Features:
  * - Project auto-selection (switches when task.project changes)
@@ -67,7 +71,7 @@ async function main() {
     tasks = JSON.parse(data);
   } catch (error) {
     console.error(chalk.red('Error loading timesheet data:'), error.message);
-    console.log(chalk.yellow('\nMake sure you have run: npm run parse'));
+    console.log(chalk.yellow('\nGenerate it first with the generate-timesheet skill.'));
     process.exit(1);
   }
 
@@ -85,6 +89,12 @@ async function main() {
     }
     if (!task.category) {
       console.error(chalk.red('Error: Task missing category field:'), task);
+      process.exit(1);
+    }
+    // duration is decimal hours. A string here reaches formatTime() and fills
+    // the portal with "NaNhNaN" rather than failing.
+    if (typeof task.duration !== 'number' || !Number.isFinite(task.duration)) {
+      console.error(chalk.red('Error: Task duration must be a number of hours:'), task);
       process.exit(1);
     }
   }
