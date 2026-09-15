@@ -99,9 +99,10 @@ async function main() {
     }
   }
 
-  // Launch browser with persistent context (dedicated automation profile)
-  const userDataDir = process.env.CHROME_USER_DATA ||
-    '/Users/entelect-jbiddick/Library/Application Support/Google/Chrome/playwright-profile';
+  // Dedicated automation profile, separate from the user's real Chrome profile so
+  // this can run alongside a browser they already have open. Relative by default:
+  // the previous absolute macOS path broke outright once the repo moved to Linux.
+  const userDataDir = process.env.CHROME_USER_DATA || './playwright-profile';
 
   console.log(chalk.gray('Launching browser with automation profile...'));
 
