@@ -13,9 +13,9 @@ correct, while the portal would have reported 4.5h against a manifest cutover th
 2.5h. Misattributing hours across tickets is worse than logging an entry with an empty
 ticket field.
 
-An entry written into a daily note is already a deliberate claim that the time was
-worked. Requiring a ticket to corroborate that claim adds nothing, since plenty of
-legitimate work — documentation, CI fixes, spikes — never gets one.
+An Entry is a deliberate claim that the time was worked. Requiring a ticket to
+corroborate that claim adds nothing, since plenty of legitimate work — documentation, CI
+fixes, spikes — never gets one.
 
 ## Consequences
 
@@ -24,3 +24,11 @@ portal accepts an empty Ticket # field is **unverified** — the submit script h
 filled it unconditionally, so the constraint has never been tested. If the portal rejects
 them, the fix belongs in the skill (route ticketless work to a catch-all category such as
 `R - Canva - Agile Team / Other`), not in reinstating a silent filter.
+
+One premise has weakened since this was written. The claim above rested on an Entry being
+hand-written by the user into a daily note. Entries are now reconstructed from GitHub
+activity and reviewed rather than authored
+([0004](0004-github-activity-replaces-the-vault.md)), so the deliberate claim is the
+user's review, not the typing. The decision stands — dropping ticketless work still
+misattributes hours, which is the actual harm — but the review step now carries weight
+this reasoning originally assigned to the writing.

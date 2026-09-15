@@ -1,5 +1,18 @@
 # Daily notes live in `Daily Plans/{year}/{spanish-month}/`
 
+**Superseded by [0004](0004-github-activity-replaces-the-vault.md).** This project no longer
+reads the Obsidian vault at all, so where a note lives in it is no longer a question this
+repo has an opinion about. `src/lib/note-path.js` has been deleted.
+
+One correction worth recording, because the decision below rested on it: the flat vault root
+was described here as frozen legacy holding "roughly fifteen older notes". That had stopped
+being true. The user's personal journal — unrelated to timesheets — is written to exactly that
+path by Obsidian and is added to daily, so the fallback branch was resolving work dates against
+a live private journal. The hazard this ADR anticipated ("a real hazard if both locations were
+actively written to") had already arrived unnoticed.
+
+---
+
 Daily notes were originally written flat at the vault root (`~/Documents/Personal/2026-07-02.md`),
 but the vault now organises them as `Daily Plans/{year}/{spanish-month}/{YYYY-MM-DD}.md` —
 Spanish month names, because that is the existing convention in the vault. The

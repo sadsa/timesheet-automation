@@ -9,9 +9,19 @@ Architectural decisions live in `docs/adr/`.
 
 ## Project Overview
 
-A Node.js CLI tool that automates timesheet entry to the Entelect portal by parsing Obsidian daily note files. The workflow is two-phase:
-1. **Parse phase** (`timesheet-parser.js`): Extract tasks from Obsidian notes with embedded Project/Category, validate against config, display summary
-2. **Submit phase** (`timesheet-submit.js`): Use Playwright to automate browser form submission to the portal
+Reconstructs timesheet entries from GitHub pull request activity and submits them to the
+Entelect portal. The workflow is two-phase:
+
+1. **Generate phase** (`.claude/skills/generate-timesheet/`): a skill, not a script. Asks
+   the user for Non-Working Days and Uncovered Work, fetches PR activity via `gh`, maps
+   repos to Project/Category, reconstructs and schedules the days, and writes
+   `output/timesheet-data.json`.
+2. **Submit phase** (`src/timesheet-submit.js`): Playwright automation that fills the
+   portal form from that JSON. The **user** runs this, not an agent — see below.
+
+This project does **not** read or write the user's Obsidian vault. It used to parse daily
+notes from it; that whole phase was deleted. See
+`docs/adr/0004-github-activity-replaces-the-vault.md`.
 
 ## Commands
 
@@ -20,135 +30,105 @@ A Node.js CLI tool that automates timesheet entry to the Entelect portal by pars
 npm install
 npx playwright install chromium
 
-# Parse daily notes for a specific date
-npm run parse -- --date 2026-01-06
+# Generate (in Claude Code): /generate-timesheet last week
 
-# Parse a date range
-npm run parse -- --range 2026-01-01:2026-01-05
-
-# Parse last week
-npm run parse -- --week last
-
-# Submit parsed timesheet data to portal
+# Submit the generated data to the portal
 npm run submit
 
-# Run all tests
+# Run tests
 npm test
-
-# Run specific test file
-node --test tests/note-parser.test.js
 ```
 
 ## Architecture
 
 ### Data Flow
 
-1. **Obsidian notes** (markdown files) → `note-parser.js` → Task objects with start/end times, Project, and Category
-2. **Task objects** → `task-filter.js` → Filtered billable tasks (excludes lunch/breaks, keeps tickets/meetings)
-3. **Filtered tasks** → Validation → Fail fast if Project/Category missing or invalid
-4. **Validated tasks** → `review-ui.js` → Display hierarchical summary (Project → Category → Tasks)
-5. **Validated tasks** → `output/timesheet-data.json` → Structured JSON output
-6. **JSON output** → `timesheet-submit.js` → Playwright automation fills portal form
+1. **GitHub PR activity** (`gh` CLI) + **Uncovered Work** (asked of the user) → Work Items
+2. **Work Items** → Redistribution → every worked weekday carries ≥ 2 items
+3. **Work Items** → Scheduling → Entries totalling exactly 8h per worked day
+4. **Entries** → `output/timesheet-data.json`
+5. **JSON** → `src/timesheet-submit.js` → Playwright fills the portal form
 
-### Task Format
+Steps 1–4 are the skill's job and live in `SKILL.md` / `REFERENCE.md`, not in code.
 
-Obsidian daily notes must contain tasks in pipe-delimited format:
+### Output contract
 
-**With ticket:**
-```
-- [ ] 9:00 AM - 10:00 AM | Project Name | Category Name | ENTELECT-1234 | Description
-```
+`output/timesheet-data.json` is the only interface between the two phases, and it is
+written by an agent rather than by code. The schema is documented in
+`.claude/skills/generate-timesheet/SKILL.md`. Two things bite:
 
-**Without ticket:**
-```
-- [ ] 9:00 AM - 10:00 AM | Project Name | Category Name | Description
-```
+- `duration` is a **number of decimal hours** (`1.5` = 1h30). A string reaches
+  `formatTime()` and fills the portal with `NaNhNaN`. Submission now rejects non-numbers.
+- `ticket` is **omitted entirely** when absent — never `null`, never `"N/A"`.
 
-The parser automatically detects ticket numbers (ENTELECT-XXXX pattern) anywhere in the task. Tasks are parsed into objects with:
-- `start`, `end`, `duration` (calculated in hours)
-- `project` (from pipe-delimited format, validated against `config/projects-categories.json`)
-- `category` (from pipe-delimited format, validated against project's categories)
-- `ticket` (extracted from ENTELECT-XXXX pattern, optional)
-- `description` (remaining text after parsing)
-- `type` (ticket/meeting/other, auto-detected)
-- `date` (YYYY-MM-DD, added during parsing)
+`submitted: true` is written back per Entry as each one saves, so an interrupted run
+resumes where it stopped. `output/` is gitignored.
 
-### Filtering Logic (task-filter.js)
+### Validation
 
-Everything in a daily note is billable **except** lunch and breaks. A ticket number is
-not required — see `docs/adr/0002-billable-work-needs-no-ticket.md`.
-- **Exclude**: Tasks with lunch/break keywords
-- **Tag as `meeting`**: Tasks with meeting keywords (MEETING, zoom, call, DSU, standup, sync) or category `Meetings`
-- **Keep as-is**: Everything else, ticket or not
-
-### Review Summary (review-ui.js)
-
-The parse phase displays a read-only hierarchical summary of parsed tasks:
-- Tasks are grouped by **Project** → **Category**
-- Shows each task with ticket/type, description (truncated), and duration
-- Displays total hours per day with visual indicator (✓ for 8h, ⚠️ otherwise)
-- No interactive editing - durations must be adjusted in source notes and re-parsed
-
-**Note**: To adjust Project, Category, or durations, edit the daily notes and re-run the parser.
+There is no code validating that a Project/Category **pairing** exists in
+`config/projects-categories.json`. `validateTask()` used to do this and was deleted with
+the note parser. An invalid pairing now fails at the Playwright selector and falls through
+to the manual-recovery prompt. That is only safe because a human runs submission. **If you
+ever automate `npm run submit`, restore pairing validation first** — the recovery prompts
+assert that a person intervened, and an agent answering them would be lying to itself.
+See ADR 0004.
 
 ### Configuration
 
-**Projects and Categories** (`config/projects-categories.json`):
-- Hierarchical structure mapping Projects to their valid Categories
-- Used for validation during parsing (fail fast on invalid Project/Category)
-- Format:
-  ```json
-  {
-    "Project Name": ["Category 1", "Category 2"],
-    "Another Project": ["Category A", "Category B"]
-  }
-  ```
+**`config/projects-categories.json`** — Project → valid Categories. The pairing is what
+matters:
+```json
+{
+  "Project Name": ["Category 1", "Category 2"]
+}
+```
 
-### Browser Automation (timesheet-submit.js)
+**`config/repo-categories.json`** — repo name → `{ project, category }`.
 
-**COMPLETE**: Automates timesheet form filling using Playwright. The script:
-1. Opens the Entelect portal and waits for login
-2. For each task:
-   - Auto-selects the Project (based on `task.project` field)
-   - Auto-selects the Category (based on `task.category` field, handles visible or dropdown)
-   - Opens the time entry form for the specific date
-   - Fills in: Ticket #, Description, Time (in "Xh" or "XhYY" format)
-   - Sets "Worked From" to "Home" by default
-   - Saves the entry
-3. Optimizes UI interactions by tracking state (only clicks when project/category changes)
+**`config/github.json`** — GitHub username and org.
 
-**Form Selectors**: See `FORM_SELECTORS.md` for complete documentation of all selectors and interaction patterns.
+### Browser Automation (`src/timesheet-submit.js`)
 
-**Key Details**:
-- Uses Knockout.js data-binding selectors (e.g., `data-bind="value: time"`)
-- Custom checkbox for "Billable" (DIV element, not standard checkbox)
-- Radio buttons for "Worked From" location (values: 2=Home, 3=Entelect, 4=Client, 5=Other)
-- Timeline interaction requires clicking on the gray bar area, not just the day label
+Fills the portal form with Playwright. For each Entry it selects the Project and Category
+(only when they change), opens the time entry form for the date, fills ticket, description,
+time (`"Xh"` / `"XhYY"`), sets "Worked From" to Home, and saves.
 
-Uses Playwright persistent context with a **dedicated automation profile** (separate from your main Chrome profile). This allows the script to:
-- Run while Chrome is open without conflicts
-- Preserve login state between runs in the automation profile
-- First run requires logging into the Entelect portal once
+**Interactive by design.** Every failure path prints `Please manually select ... and press
+Enter` and blocks on stdin. Do not run it unattended and do not run it on the user's
+behalf — pressing those prompts asserts a human fixed something by hand.
+
+Uses a Playwright persistent context with a **dedicated automation profile** (separate from
+the main Chrome profile), so it can run alongside Chrome and keep the portal login between
+runs. First run requires logging in once.
+
+**Form Selectors**: see `FORM_SELECTORS.md`.
+
+**Key details**:
+- Knockout.js data-binding selectors (e.g. `data-bind="value: time"`)
+- "Billable" is a custom DIV checkbox — use `.textcheckbox`, not `input[type="checkbox"]`
+- "Worked From" radios: 2=Home, 3=Entelect, 4=Client, 5=Other
 
 ## Environment Variables
 
-Configure via `.env` file (see `.env.example`):
-- `NOTES_DIR`: Path to the Obsidian vault **root** (default: `/Users/entelect-jbiddick/Documents/Personal`). Not the notes folder itself — `note-path.js` resolves `Daily Plans/{year}/{spanish-month}/{date}.md` beneath it, falling back to a flat `{date}.md` at the root for legacy notes. See `docs/adr/0001-daily-note-location.md`.
-- `CHROME_USER_DATA`: Path to Chrome user data directory for session reuse
+Configure via `.env` (see `.env.example`):
+- `CHROME_USER_DATA`: Playwright automation profile directory
 
 ## Testing
 
-Uses Node.js built-in test runner (`node:test`). Test files in `tests/` directory test individual parsing functions with assert-based assertions. No testing framework dependencies required.
+Node's built-in test runner (`node:test`), tests in `tests/`. Only `config-validator.test.js`
+remains — the parsing tests went with the parser. The generate phase is a skill and isn't
+unit-testable here; its correctness rests on the schema in `SKILL.md` and the user's review.
 
 ## Common Issues
 
-- If no tasks are found, verify the Obsidian task format matches the pipe-delimited format (see Task Format section)
-- If validation fails with "missing Project or Category", ensure all tasks use the pipe-delimited format with Project and Category
-- If validation fails with "invalid Project or Category", verify the values exist in `config/projects-categories.json`
-- If duration totals are incorrect, check time parsing in `calculateDuration()` (uses date-fns)
-- If browser automation fails to find elements, the portal's UI may have changed
-- **Timeline interaction**: Must click on `.timeEntry-entry` element (the gray timeline bar), NOT the date label
-  - DOM structure: `DIV.timeEntry` contains `DIV.timeEntry-infoHeader` (blocks clicks!) and `DIV.timeEntry-entry` (clickable)
-  - The `.timeEntry-infoHeader` element intercepts pointer events, causing timeouts if you click the date label
-  - Correct approach: `page.locator('.timeEntry', { hasText: dayLabel }).locator('.timeEntry-entry').click()`
-- Custom "Billable" checkbox is a DIV element - use `.textcheckbox` selector, not `input[type="checkbox"]`
+- **Duplicate hours**: regenerating a range that overlaps already-submitted dates. The skill
+  checks for overlapping `submitted: true` entries before overwriting; heed the warning.
+- **A day you didn't work shows 8 hours**: you weren't asked, or didn't say, that it was a
+  Non-Working Day. Redistribution assumes an empty day was still worked (ADR 0003).
+- **`NaNhNaN` in the portal**: `duration` was written as a string.
+- **Portal element not found**: the UI may have changed, or the Project/Category pairing
+  doesn't exist. Check `config/projects-categories.json`.
+- **Timeline interaction**: click `.timeEntry-entry` (the gray bar), NOT the date label.
+  `.timeEntry-infoHeader` intercepts pointer events and causes timeouts.
+  `page.locator('.timeEntry', { hasText: dayLabel }).locator('.timeEntry-entry').click()`

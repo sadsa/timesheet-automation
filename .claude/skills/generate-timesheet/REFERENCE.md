@@ -2,7 +2,8 @@
 
 ## Redistribution algorithm
 
-Goal: every weekday has ≥ 2 work items.
+Goal: every **worked** weekday has ≥ 2 work items. Non-Working Days are excluded
+before this runs — they are never a donor and never a recipient.
 
 A one-item day is almost always an artifact of using PR timestamps as a proxy for
 work, not a real half-empty day. Redistribution corrects the proxy. It does not
@@ -13,7 +14,7 @@ was actually at their desk. Anything it produces is for the user to review.
 2. For each thin day, pick the nearest donor day (prefer same week, then adjacent week).
 3. Move one item from the donor to the thin day. Prefer moving items that are part of a multi-PR ticket (so the same ticket appearing on two days looks like natural spillover work).
 4. Repeat until all days have ≥ 2 items or no donors remain.
-5. If a thin day still has < 2 items after redistribution, allow the same ticket to appear on that day AND the adjacent day as a spillover (split the work block across both days).
+5. If a thin day still has < 2 items after redistribution, allow the same ticket to appear on that day AND the adjacent day as a spillover (split the work block across both days). The adjacent day must be a consecutive worked weekday — not a weekend, not a Non-Working Day.
 
 ## Scheduling algorithm
 
@@ -28,7 +29,8 @@ LUNCH (1h gap, no entry)
 ```
 
 Slot durations vary by lunch start. Every combination totals **8h** including the
-0.5h standup — that is the contract with the parser, not a target to approximate:
+0.5h standup — the portal expects full days, so this is a figure to hit exactly, not a
+target to approximate:
 
 | Lunch start | A | B | C | A+B+C+standup |
 |-------------|---|---|---|---------------|
@@ -48,6 +50,9 @@ With 3 tasks per day (spillover day):
 **Spillover pattern** (task carries from previous afternoon into next morning):
 - Day N: `... | 2:00 PM - 5:00 PM | ... | ENTELECT-XXX | Description`
 - Day N+1: `... | 8:00 AM - 10:00 AM | ... | ENTELECT-XXX | Description`
+
+These illustrate the shape of a spillover, not an output format — the skill emits JSON
+Entries with decimal `duration`, per the schema in SKILL.md.
 
 ## PR title cleaning
 
@@ -96,26 +101,3 @@ Search in order: PR title → branch name → PR body (first match wins). If no 
 ```
 
 Add new repos to this file as you work across more repositories.
-
-## Daily Plans path
-
-```
-~/Documents/Personal/Daily Plans/{year}/{spanish_month}/{YYYY-MM-DD}.md
-```
-
-| Month | Spanish |
-|-------|---------|
-| January | enero |
-| February | febrero |
-| March | marzo |
-| April | abril |
-| May | mayo |
-| June | junio |
-| July | julio |
-| August | agosto |
-| September | septiembre |
-| October | octubre |
-| November | noviembre |
-| December | diciembre |
-
-Example: `2026-06-15.md` → `Daily Plans/2026/junio/2026-06-15.md`
