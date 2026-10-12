@@ -54,24 +54,6 @@ With 3 tasks per day (spillover day):
 These illustrate the shape of a spillover, not an output format — the skill emits JSON
 Entries with decimal `duration`, per the schema in SKILL.md.
 
-## PR title cleaning
-
-Strip conventional commit prefixes from PR titles when used as descriptions:
-- Remove leading `feat:`, `fix:`, `chore:`, `build:`, `ci:`, `refactor:`, `test:`, `docs:`, `style:`, `perf:`, `revert:`
-- Remove ticket numbers that appear at the start: `ENTELECT-XXXX |` or `ENTELECT-XXXX -`
-- Capitalise the first letter of the result
-- Keep the description concise — truncate at 80 chars if needed
-
-Examples:
-- `ENTELECT-587 | fix: add build:staging scripts` → `Add build:staging and build:prod scripts`
-- `feat(ci): add RICE deploy workflows (ECOPIE-3059)` → `Add RICE deploy workflows mirroring slack-integration`
-
-## Ticket extraction
-
-Ticket number regex: `/[A-Z]+-\d+/` (covers ENTELECT-XXX, ECOPIE-XXX, etc.)
-
-Search in order: PR title → branch name → PR body (first match wins). If no ticket found, omit the field — do not write `N/A`.
-
 ## Config schemas
 
 ### config/github.json

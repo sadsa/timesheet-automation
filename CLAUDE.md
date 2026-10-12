@@ -36,6 +36,12 @@ npx playwright install chromium
 # Submit the generated data to the portal
 npm run submit
 
+# Fetch PR activity as Work Items (used by the skill)
+npm run fetch-activity -- 2026-09-01 2026-09-15
+
+# Validate output/timesheet-data.json
+npm run check
+
 # Run tests
 npm test
 ```
@@ -50,7 +56,9 @@ npm test
 4. **Entries** → `output/timesheet-data.json`
 5. **JSON** → `src/timesheet-submit.js` → Playwright fills the portal form
 
-Steps 1–4 are the skill's job and live in `SKILL.md` / `REFERENCE.md`, not in code.
+Steps 1–4 are the skill's job. The deterministic ends are code: `src/fetch-activity.js`
+fetches and dates the Work Items, `src/lib/timesheet-validator.js` checks the result.
+Redistribution and scheduling are judgement and live in `SKILL.md` / `REFERENCE.md`.
 
 ### Output contract
 
@@ -59,7 +67,7 @@ written by an agent rather than by code. The schema is documented in
 `.claude/skills/generate-timesheet/SKILL.md`. Two things bite:
 
 - `duration` is a **number of decimal hours** (`1.5` = 1h30). A string reaches
-  `formatTime()` and fills the portal with `NaNhNaN`. Submission now rejects non-numbers.
+  `formatTime()` and fills the portal with `NaNhNaN`.
 - `ticket` is **omitted entirely** when absent — never `null`, never `"N/A"`.
 
 `submitted: true` is written back per Entry as each one saves, so an interrupted run
@@ -67,13 +75,12 @@ resumes where it stopped. `output/` is gitignored.
 
 ### Validation
 
-There is no code validating that a Project/Category **pairing** exists in
-`config/projects-categories.json`. `validateTask()` used to do this and was deleted with
-the note parser. An invalid pairing now fails at the Playwright selector and falls through
-to the manual-recovery prompt. That is only safe because a human runs submission. **If you
-ever automate `npm run submit`, restore pairing validation first** — the recovery prompts
-assert that a person intervened, and an agent answering them would be lying to itself.
-See ADR 0004.
+`src/lib/timesheet-validator.js` is the single source of truth for the output contract.
+`validateEntries()` checks shape and the Project/Category **pairing** against
+`config/projects-categories.json`; submission runs it before opening the portal, so its
+manual-recovery prompts only cover genuine UI failures. `validateDays()` adds the
+generation rules (≥ 2 Entries, exactly 8h per day); only `npm run check` runs it, so a
+hand-edited day can still be submitted. When the schema changes, change the validator.
 
 ### Configuration
 
@@ -117,9 +124,10 @@ Configure via `.env` (see `.env.example`):
 
 ## Testing
 
-Node's built-in test runner (`node:test`), tests in `tests/`. Only `config-validator.test.js`
-remains — the parsing tests went with the parser. The generate phase is a skill and isn't
-unit-testable here; its correctness rests on the schema in `SKILL.md` and the user's review.
+Node's built-in test runner (`node:test`), tests in `tests/`. The validator and the
+activity helpers (`src/lib/activity.js`: local dating, ticket extraction, title cleaning)
+are unit-tested. Redistribution and scheduling are skill judgement, not code; the
+validator is what holds their output to the contract.
 
 ## Common Issues
 

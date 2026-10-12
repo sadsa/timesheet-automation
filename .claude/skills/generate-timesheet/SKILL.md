@@ -46,32 +46,29 @@ Drop Non-Working Days from the weekday list entirely. They get no Entries, are n
 eight hours, and take no part in Redistribution in either direction.
 
 Treat Uncovered Work as Work Items alongside the ones fetched from GitHub, pinned to the day
-the user gave. For each, pick the Project/Category from `projects-categories.json` — the
-pairing must exist in that file, and nothing downstream will check it, so check it here.
+the user gave. For each, pick the Project/Category pairing from `projects-categories.json`.
 
-### 3. Fetch PRs created by user
-For each repo in `repo-categories.json`:
+### 3. Fetch PR activity
 ```bash
-gh pr list --repo <org>/<repo> --state all \
-  --json number,title,createdAt,author,url \
-  --limit 50
+npm run -s fetch-activity -- <from> <to>
 ```
-Filter by `author.login == username` and `createdAt` within range.
+Prints every PR the user authored or reviewed in range as Work Items, one per line:
+`date` and `time` already in local time, `ticket` extracted (absent when none),
+`description` cleaned from the title, and `project`/`category` mapped from
+`repo-categories.json`. A PR reviewed on two days appears once per day. It takes up to a
+minute, since it reads each reviewed PR's reviews.
 
-### 4. Fetch PRs reviewed by user
-```bash
-gh api "search/issues?q=is:pr+reviewed-by:<username>+created:<from>..<to>&per_page=50"
-```
-For each result, fetch the actual review date (not PR creation date):
-```bash
-gh api repos/<org>/<repo>/pulls/<num>/reviews \
-  --jq '[.[] | select(.user.login == "<username>")] | first | .submitted_at'
-```
-Use `submitted_at` as the activity date.
+The fetched Work Items are complete. Build from them without querying `gh` again.
 
-### 5. Map to project/category
-Look up each PR's repo name in `repo-categories.json`. For any unrecognised repo, ask the
-user before continuing.
+### 4. Resolve unmapped repos
+Items from repos missing in `repo-categories.json` have `project: null` and are listed
+under `unmappedRepos`. Ask the user where each one should be booked, or whether to skip
+it, before continuing.
+
+### 5. Refine descriptions
+`description` is the PR title with ticket keys and conventional-commit prefixes stripped.
+Reword where it still reads like a commit message rather than work done; `title` holds
+the original.
 
 ### 6. Build the day roster
 
@@ -80,10 +77,7 @@ worked, so worked days with thin or no PR activity are filled from neighbouring 
 output is an approximation for the user to review before submitting. See
 `docs/adr/0003-generated-plans-are-reconstructions.md`.
 
-- Assign each item to its activity date (created date for authored PRs, review date for
-  reviewed PRs, the user's stated day for Uncovered Work)
-- **Convert UTC timestamps to the user's local timezone before deriving the date** — a PR
-  created at 23:29 UTC belongs to the next local day in NZ
+- Assign each item to its `date` (Uncovered Work to the user's stated day)
 - Each worked weekday needs **≥ 2 work items** — redistribute from days with 3+ into days
   with < 2
 - **Never redistribute onto or off a Non-Working Day**
@@ -112,6 +106,16 @@ start time. This overwrites any existing file.
 the user — those hours are already in the portal and regenerating them risks filing them
 twice. Otherwise overwrite without ceremony.
 
+Then run:
+
+```bash
+npm run -s check
+```
+
+It checks every Entry against the schema below, every Project/Category pairing against
+`config/projects-categories.json`, and every day for ≥ 2 Entries totalling exactly 8h.
+This step is done when it prints `✓`. Fix each error it lists and rerun.
+
 ### 9. Show the summary and stop
 
 Print the Entries grouped **Project → Category → Entry**, with a total per day and a `✓` for
@@ -126,8 +130,8 @@ something by hand. The user runs it.
 
 ## Output schema
 
-`output/timesheet-data.json` is a flat JSON array. `timesheet-submit.js` consumes it
-directly; nothing validates it first, so the shape must be exactly right.
+`output/timesheet-data.json` is a flat JSON array, validated by
+`src/lib/timesheet-validator.js`. Submission refuses a file that fails it.
 
 | Field | Type | Notes |
 |-------|------|-------|

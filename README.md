@@ -10,7 +10,7 @@ Two phases. The first is a Claude Code skill, the second is a script you run you
 # 1. Generate — in Claude Code, from this repo:
 #    /generate-timesheet last week
 #    Asks about non-working days and work GitHub can't see, then writes
-#    output/timesheet-data.json and prints a summary.
+#    output/timesheet-data.json, checks it with `npm run check`, and prints a summary.
 
 # 2. Review output/timesheet-data.json, then submit:
 npm run submit

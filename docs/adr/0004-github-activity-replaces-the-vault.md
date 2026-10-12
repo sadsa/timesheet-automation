@@ -38,6 +38,11 @@ submission is ever automated, restoring validation stops being optional: an agen
 Enter there would be claiming a fix it did not make, and the Entry would be saved under
 whichever project happened to be selected.
 
+**Update:** pairing validation is restored in `src/lib/timesheet-validator.js`. Submission
+refuses a file with an invalid pairing before opening the portal, and the skill must pass
+`npm run check` before handing over. Agents rebuilt that check ad hoc on every run, and
+nothing guaranteed the next one would remember to.
+
 `output/timesheet-data.json` is both the skill's output and submission's progress ledger —
 `submitted: true` is written back per Entry — and `output/` is gitignored. Regenerating
 overwrites it. That is safe as long as a regenerated range does not cover already-submitted

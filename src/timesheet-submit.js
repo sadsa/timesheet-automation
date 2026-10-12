@@ -20,6 +20,7 @@ import { chromium } from 'playwright';
 import fs from 'fs/promises';
 import chalk from 'chalk';
 import readline from 'readline';
+import { validateEntries } from './lib/timesheet-validator.js';
 
 async function waitForEnter(message) {
   const rl = readline.createInterface({
@@ -81,22 +82,16 @@ async function main() {
   }
   console.log(`Loaded ${tasks.length} task(s)`);
 
-  // Validate task structure
-  for (const task of tasks) {
-    if (!task.project) {
-      console.error(chalk.red('Error: Task missing project field:'), task);
-      process.exit(1);
-    }
-    if (!task.category) {
-      console.error(chalk.red('Error: Task missing category field:'), task);
-      process.exit(1);
-    }
-    // duration is decimal hours. A string here reaches formatTime() and fills
-    // the portal with "NaNhNaN" rather than failing.
-    if (typeof task.duration !== 'number' || !Number.isFinite(task.duration)) {
-      console.error(chalk.red('Error: Task duration must be a number of hours:'), task);
-      process.exit(1);
-    }
+  // Reject bad shapes and Project/Category pairings before opening the portal,
+  // so the manual-recovery prompts below only ever cover genuine UI failures.
+  const projectsCategories = JSON.parse(
+    await fs.readFile(new URL('../config/projects-categories.json', import.meta.url), 'utf-8')
+  );
+  const errors = validateEntries(tasks, projectsCategories);
+  if (errors.length > 0) {
+    console.error(chalk.red(`${dataPath} is invalid:`));
+    for (const error of errors) console.error(`  ✗ ${error}`);
+    process.exit(1);
   }
 
   // Dedicated automation profile, separate from the user's real Chrome profile so
