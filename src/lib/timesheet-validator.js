@@ -5,6 +5,8 @@
  * Every function returns a list of human-readable errors; an empty list means valid.
  */
 
+import { OVERFLOW_LABEL } from './catalogue.js';
+
 const FIELDS = ['date', 'project', 'category', 'duration', 'description', 'ticket', 'type', 'submitted'];
 const TYPES = ['ticket', 'meeting', 'other'];
 const HOURS_PER_DAY = 8;
@@ -36,7 +38,13 @@ export function validateEntries(entries, projectsCategories) {
     }
 
     const categories = projectsCategories[entry.project];
-    if (!categories) {
+    if (entry.category === OVERFLOW_LABEL) {
+      // Clicking it only opens the overflow dropdown; the Entry would save under
+      // whichever Category was already selected.
+      errors.push(`${at}: "${OVERFLOW_LABEL}" is the portal's overflow dropdown, not a Category`);
+    } else if (entry.submitted === true) {
+      // Already in the portal; its pairing may since have been retired.
+    } else if (!categories) {
       errors.push(`${at}: project "${entry.project}" is not in config/projects-categories.json`);
     } else if (!categories.includes(entry.category)) {
       errors.push(`${at}: category "${entry.category}" is not listed under project "${entry.project}"`);

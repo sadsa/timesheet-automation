@@ -12,11 +12,11 @@
     "category": "Google Drive"
   },
   "one-drive": {
-    "project": "R - Canva - Agile Team",
-    "category": "OneDrive"
+    "project": "FP - Canva - Agile",
+    "category": "One Drive"
   },
   "canva-rovo-ai-agent": {
-    "project": "R - Canva - Agile Team",
-    "category": "Other"
+    "project": "FP - Canva - Agile",
+    "category": "Atlassian Rovo Agents"
   }
 }

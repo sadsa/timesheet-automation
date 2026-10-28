@@ -40,12 +40,18 @@ _Avoid_: Chargeable, claimable
 
 **Project**:
 The top-level Entelect cost code an Entry is logged against, e.g.
-`R - Canva - Agile Team`. Enumerated in `config/projects-categories.json`.
+`FP - Canva - Agile`. The valid set is the Portal Catalogue.
 
 **Category**:
 The subdivision of a Project, e.g. `Teams App Software Dev`. Only valid within its own
 Project — the pairing is what matters.
 _Avoid_: Subproject, activity type
+
+**Portal Catalogue**:
+The set of Project/Category pairings the Entelect portal currently accepts. It changes
+without notice — Projects are retired and Categories move between Projects — so it is
+the authority; any local list of pairings is only a copy of it, and can be stale.
+_Avoid_: Project list, categories
 
 **Ticket**:
 A JIRA reference such as `ENTELECT-2497`, matching `/[A-Z]+-\d+/`. Optional. An Entry
@@ -76,6 +82,15 @@ The shortfall between a day's Entries and the expected eight hours. A well-forme
 reconstructed day has no Gap; a Gap means either the schedule is wrong or the day was
 genuinely irregular.
 _Avoid_: Shortfall, deficit
+
+### Submission
+
+**Skipped Entry**:
+An Entry the user chose not to submit on this run — typically because its pairing is
+not in the Portal Catalogue. It stays unsubmitted and is retried next run. A skip is the
+user's decision; it is distinct from a failure, which is something that happens to the
+automation.
+_Avoid_: Failed entry, dropped entry
 
 ### Not terms here
 

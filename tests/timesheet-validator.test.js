@@ -79,3 +79,13 @@ test('a day with one Entry is rejected', () => {
     '2026-09-01: has 1 Entry, expected at least 2'
   ]);
 });
+
+test('"Other" is rejected as a Category even when the config lists it', () => {
+  const errors = validateEntries([entry({ category: 'Other' })], { 'FP - Canva - Agile': ['Other'] });
+  assert.match(errors[0], /overflow dropdown/);
+});
+
+test('a submitted Entry may carry a pairing the portal has since retired', () => {
+  assert.deepStrictEqual(errorsFor({ project: 'R - Canva - Agile Team', submitted: true }), []);
+  assert.strictEqual(errorsFor({ project: 'R - Canva - Agile Team' }).length, 1);
+});

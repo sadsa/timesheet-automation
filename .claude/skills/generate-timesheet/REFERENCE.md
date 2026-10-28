@@ -68,7 +68,7 @@ Entries with decimal `duration`, per the schema in SKILL.md.
 ```json
 {
   "canva-teams-integration": {
-    "project": "R - Canva - Agile Team",
+    "project": "FP - Canva - Agile",
     "category": "Teams App Software Dev"
   },
   "google-photos": {

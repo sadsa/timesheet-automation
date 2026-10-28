@@ -42,3 +42,18 @@ test('all projects have non-empty category arrays', () => {
     }
   }
 });
+
+test('no category is the portal overflow dropdown label', () => {
+  const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+  for (const [projectName, categories] of Object.entries(config)) {
+    assert.ok(!categories.includes('Other'), `Project "${projectName}" lists "Other", which is the dropdown button, not a Category`);
+  }
+});
+
+test('every repo maps to a pairing in projects-categories.json', () => {
+  const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+  const repos = JSON.parse(readFileSync(join(__dirname, '../config/repo-categories.json'), 'utf-8'));
+  for (const [repo, { project, category }] of Object.entries(repos)) {
+    assert.ok(config[project]?.includes(category), `${repo} maps to "${project} / ${category}", which is not in the config`);
+  }
+});

@@ -20,9 +20,17 @@ lives there — see `docs/adr/0004-github-activity-replaces-the-vault.md`.
 |------|---------|
 | `github.json` | GitHub username and org |
 | `repo-categories.json` | Repo name → `{ project, category }` |
-| `projects-categories.json` | Valid project/category pairs |
+| `projects-categories.json` | Valid project/category pairs — a copy of the Portal Catalogue |
+| `catalogue-sync.json` | When `projects-categories.json` was last synced from the portal |
 
 ## Workflow
+
+### 0. Check the catalogue is fresh
+The portal retires Projects and moves Categories without notice, and a pairing that is
+gone fails at submit time. Read `syncedAt` from `config/catalogue-sync.json`. If it is
+missing or more than 7 days old, tell the user how old it is and suggest they run
+`npm run sync-projects` before you continue (it opens the portal, so they run it, not
+you). Continue either way once they answer.
 
 ### 1. Resolve date range
 Accept natural language (`last week`, `last fortnight`) or explicit dates (`2026-06-01 to
@@ -47,6 +55,8 @@ eight hours, and take no part in Redistribution in either direction.
 
 Treat Uncovered Work as Work Items alongside the ones fetched from GitHub, pinned to the day
 the user gave. For each, pick the Project/Category pairing from `projects-categories.json`.
+Never use `Other` as a Category: in the portal it is the overflow dropdown button, not a
+Category, and the validator rejects it.
 
 ### 3. Fetch PR activity
 ```bash
@@ -128,6 +138,10 @@ Do not run `npm run submit`. Submission writes to the Entelect portal, and
 project "X" and press Enter` and waits. Pressing that Enter asserts that a human fixed
 something by hand. The user runs it.
 
+Before submitting anything it checks every pairing against the live Portal Catalogue and
+offers to skip any the portal no longer accepts. Skipped Entries stay unsubmitted, so the
+next run retries them once they are re-paired.
+
 ## Output schema
 
 `output/timesheet-data.json` is a flat JSON array, validated by
@@ -136,7 +150,7 @@ something by hand. The user runs it.
 | Field | Type | Notes |
 |-------|------|-------|
 | `date` | string | `YYYY-MM-DD` |
-| `project` | string | Must exist as a key in `config/projects-categories.json` |
+| `project` | string | Must exist as a key in `config/projects-categories.json` (not checked once `submitted`) |
 | `category` | string | Must be listed under that project — the **pairing** is what matters |
 | `duration` | **number** | Decimal hours. `1.5` means 1h30. Not a string, not a time range |
 | `description` | string | Non-empty |

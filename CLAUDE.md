@@ -36,6 +36,9 @@ npx playwright install chromium
 # Submit the generated data to the portal
 npm run submit
 
+# Refresh config/projects-categories.json from the live portal
+npm run sync-projects
+
 # Fetch PR activity as Work Items (used by the skill)
 npm run fetch-activity -- 2026-09-01 2026-09-15
 
@@ -77,14 +80,17 @@ resumes where it stopped. `output/` is gitignored.
 
 `src/lib/timesheet-validator.js` is the single source of truth for the output contract.
 `validateEntries()` checks shape and the Project/Category **pairing** against
-`config/projects-categories.json`; submission runs it before opening the portal, so its
+`config/projects-categories.json` (skipping Entries already `submitted`, whose pairing
+may since have been retired); submission runs it before opening the portal, so its
 manual-recovery prompts only cover genuine UI failures. `validateDays()` adds the
 generation rules (≥ 2 Entries, exactly 8h per day); only `npm run check` runs it, so a
 hand-edited day can still be submitted. When the schema changes, change the validator.
 
 ### Configuration
 
-**`config/projects-categories.json`** — Project → valid Categories. The pairing is what
+**`config/projects-categories.json`** — Project → valid Categories: a copy of the Portal
+Catalogue, overwritten by `npm run sync-projects` (which also stamps
+`config/catalogue-sync.json`). Never hand-add `Other` — see below. The pairing is what
 matters:
 ```json
 {
@@ -102,8 +108,14 @@ Fills the portal form with Playwright. For each Entry it selects the Project and
 (only when they change), opens the time entry form for the date, fills ticket, description,
 time (`"Xh"` / `"XhYY"`), sets "Worked From" to Home, and saves.
 
-**Interactive by design.** Every failure path prints `Please manually select ... and press
-Enter` and blocks on stdin. Do not run it unattended and do not run it on the user's
+**Pre-flight.** After login it reads the live Portal Catalogue and lists every unsubmitted
+Entry whose pairing the portal no longer accepts, then asks whether to skip them.
+
+**Interactive by design.** Every failure path prints `Please manually select ...` and blocks
+on stdin: Enter means it was fixed by hand, `s` makes it a Skipped Entry (stays
+`submitted: false`, open form cancelled, listed in the end-of-run summary). For Project and
+Category, Enter is checked against the portal's actual selection and refused while it
+doesn't match. Do not run it unattended and do not run it on the user's
 behalf — pressing those prompts asserts a human fixed something by hand.
 
 Uses a Playwright persistent context with a **dedicated automation profile** (separate from
@@ -116,6 +128,12 @@ runs. First run requires logging in once.
 - Knockout.js data-binding selectors (e.g. `data-bind="value: time"`)
 - "Billable" is a custom DIV checkbox — use `.textcheckbox`, not `input[type="checkbox"]`
 - "Worked From" radios: 2=Home, 3=Entelect, 4=Client, 5=Other
+- The Knockout root view model (`ko.contextFor(el).$root`) holds the catalogue
+  (`visibleProjects` / `hiddenProjects`, each with `Categories`) and the selection
+  (`selectedProject()` / `selectedCategory()`); `src/lib/portal.js` reads both from it
+- `Other` is the overflow dropdown button (an `Id: -1` placeholder), not a Category —
+  clicking it "succeeds" and selects nothing
+- An open entry form closes with `button.cancel`
 
 ## Environment Variables
 
@@ -137,7 +155,7 @@ validator is what holds their output to the contract.
   Non-Working Day. Redistribution assumes an empty day was still worked (ADR 0003).
 - **`NaNhNaN` in the portal**: `duration` was written as a string.
 - **Portal element not found**: the UI may have changed, or the Project/Category pairing
-  doesn't exist. Check `config/projects-categories.json`.
+  doesn't exist. Run `npm run sync-projects`; the submit pre-flight should catch this first.
 - **Timeline interaction**: click `.timeEntry-entry` (the gray bar), NOT the date label.
   `.timeEntry-infoHeader` intercepts pointer events and causes timeouts.
   `page.locator('.timeEntry', { hasText: dayLabel }).locator('.timeEntry-entry').click()`

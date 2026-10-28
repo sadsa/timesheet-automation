@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "submit": "node --env-file-if-exists=.env src/timesheet-submit.js",
+    "sync-projects": "node --env-file-if-exists=.env src/sync-projects.js",
     "fetch-activity": "node src/fetch-activity.js",
     "check": "node src/validate-timesheet.js",
     "test": "node --test"

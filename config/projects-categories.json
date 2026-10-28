@@ -1,29 +1,41 @@
 {
   "FP - Canva - Agile": [
-    "Teams App Software Dev",
-    "Meetings"
-  ],
-  "R - Canva - Agile Team": [
     "Meetings",
-    "Hubspot Data App Software Dev",
-    "Hubspot Data App Analysis",
-    "Hubspot Data App Dev Support",
-    "Snowflake Dev support",
-    "Snowflake Software Dev",
-    "Salesforce Data App Analysis",
-    "Google Analytics Software Dev",
-    "World Bank Data App Dev Support",
+    "1 on 1 Meetings",
+    "Teams App Analysis",
+    "Teams App Dev support",
     "Teams App Software Dev",
-    "OneDrive",
-    "BigQuery",
-    "Other"
+    "Atlassian Rovo Agents",
+    "DropBox",
+    "Frigg Framework",
+    "Google Drive",
+    "Google Maps",
+    "Google Photos",
+    "Google Workspace",
+    "One Drive",
+    "Sales Force",
+    "Slack Integration"
   ],
   "R - Canva Maintenance": [
-    "Google Drive",
-    "Google Photos",
-    "Slack Integration Dev Support",
+    "Frigg Framework Migration Analysis",
+    "Frigg Framework Migration Meetings",
+    "Frigg Framework Migration Software Dev",
     "Slack Integration Maint Software Dev",
-    "DropBox"
+    "Google Workspace Integration Maint Software Dev",
+    "1 on 1 Meetings",
+    "Atlassian Rovo Agents",
+    "DropBox",
+    "Frigg Framework Migration Dev Support",
+    "Google Drive",
+    "Google Maps",
+    "Google Photos",
+    "Google Workspace Integration Dev Support",
+    "Meetings",
+    "Onboarding",
+    "Sales Force Integration Dev Support",
+    "Sales Force Integration Maint Sofware Dev",
+    "Slack Integration Dev Support",
+    "Teams App Dev support"
   ],
   "Meetings and Reviews (NZ)": [
     "Client Interview",
@@ -31,10 +43,15 @@
     "Entelect Knowledge Sharing Meeting",
     "New Employee Induction",
     "One On One Attendance",
-    "Online Review Capture",
+    "Admin & Other",
     "Business Development",
-    "Townhall",
-    "Other"
+    "One On One Facilitation",
+    "Online Review Capture",
+    "Review Attendance",
+    "Review Facilitation",
+    "Team Lead Breakaway",
+    "Team Lead Inductions",
+    "Townhall"
   ],
   "Social Events (NZ)": [
     "Social Club Attendance",
@@ -49,6 +66,17 @@
     "Training Presentation",
     "Beer & Tech Attendance",
     "Beer & Tech Presentation",
-    "Other"
+    "Awareness Training",
+    "Conference Attendance",
+    "Conference Presentation",
+    "DevDay Attendance",
+    "DevDay Presentation",
+    "Forum Attendance",
+    "Forum Presentation",
+    "Interimn Training Attendance",
+    "Thought Leadership",
+    "Townhall Presenter",
+    "User Group Attendance",
+    "User Group Presentation"
   ]
 }
