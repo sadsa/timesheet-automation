@@ -134,6 +134,15 @@ runs. First run requires logging in once.
 - `Other` is the overflow dropdown button (an `Id: -1` placeholder), not a Category —
   clicking it "succeeds" and selects nothing
 - An open entry form closes with `button.cancel`
+- **Mini calendar** (`#datepicker`, bootstrap-datepicker bound to `dateRange`) selects the
+  range the timeline shows: two clicks, start then end. The timeline renders one
+  `.timeEntry` per day in the range, weekends included. Navigate with `th.prev` / `th.next`
+  under `.datepicker-days`; address days by `td.day[data-date]` (UTC-midnight epoch ms,
+  not local), skipping `.old` / `.new` (neighbouring months). A range can cross months
+  (click start, `next`, click end). Verified to render 14 days; longer ranges were
+  inconclusive, hence `WINDOW_DAYS`. Months before Sep 2026 are disabled (no upper limit).
+  Submit plans windows from the unsubmitted dates (`src/lib/calendar-windows.js`) and
+  selects one when an Entry's day label isn't on screen; failures go to `recover()`.
 
 ## Environment Variables
 

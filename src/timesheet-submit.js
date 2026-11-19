@@ -22,7 +22,8 @@ import fs from 'fs/promises';
 import chalk from 'chalk';
 import { validateEntries } from './lib/timesheet-validator.js';
 import { entriesOutsideCatalogue } from './lib/catalogue.js';
-import { openPortal, readCatalogue, readSelection } from './lib/portal.js';
+import { openPortal, readCatalogue, readSelection, isDayVisible, selectWindow } from './lib/portal.js';
+import { planWindows, windowFor } from './lib/calendar-windows.js';
 import { ask, waitForEnter } from './lib/prompt.js';
 
 /**
@@ -139,6 +140,12 @@ async function main() {
   }
   const preSkipped = new Set(outside);
 
+  // The mini calendar picks the date range the timeline shows. Plan the ranges up front
+  // from the dates still to submit, so navigation doesn't depend on Entry order.
+  const windows = planWindows(
+    tasks.filter((t, i) => !t.submitted && !preSkipped.has(i)).map(t => t.date)
+  );
+
   console.log(chalk.green('\n✓ Starting automated form filling\n'));
 
   // Track current state to minimize UI interactions
@@ -238,6 +245,23 @@ async function main() {
     // Step 3: Open timeline form for the specific date
     console.log(chalk.yellow(`  → Opening timeline for ${task.date}`));
     const dayLabel = getDayLabel(task.date);
+
+    // The timeline only shows the range selected in the mini calendar. Select the
+    // planned window containing this date when it isn't on screen.
+    if (!await isDayVisible(page, dayLabel)) {
+      const window = windowFor(windows, task.date);
+      console.log(chalk.yellow(`  → ${dayLabel} isn't on screen — selecting ${window.start} to ${window.end} in the calendar`));
+      try {
+        await selectWindow(page, window);
+      } catch (error) {
+        console.error(chalk.red(`  ✗ Failed to select dates: ${error.message.split('\n')[0]}`));
+        const fixed = await recover(
+          `Please manually select ${window.start} to ${window.end} in the calendar`,
+          async () => await isDayVisible(page, dayLabel) ? null : `${dayLabel} still isn't on the timeline`
+        );
+        if (!fixed) { await skip('date range not selectable'); continue; }
+      }
+    }
 
     try {
       // Find the .timeEntry container for this day and click on its timeline bar

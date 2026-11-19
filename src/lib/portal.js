@@ -6,6 +6,7 @@
  */
 import { chromium } from 'playwright';
 import { toCatalogue } from './catalogue.js';
+import { dayEpoch, monthDelta, parseMonthTitle, windowDays } from './calendar-windows.js';
 
 export const PORTAL_URL = 'https://employee.entelect.co.za/Timesheet';
 
@@ -47,4 +48,49 @@ export async function readSelection(page) {
       category: ko.unwrap(root.selectedCategory())?.Name ?? null
     };
   });
+}
+
+/**
+ * The mini calendar (bootstrap-datepicker) selects the date range the timeline shows.
+ * Days are addressed by `data-date` (UTC midnight epoch ms); `.old` / `.new` cells are
+ * the neighbouring months' days and are never clicked.
+ */
+const DAYS_VIEW = '#datepicker .datepicker-days';
+
+async function clickDay(page, date) {
+  for (let i = 0; i < 36; i++) {
+    const shown = parseMonthTitle(await page.locator(`${DAYS_VIEW} th.datepicker-switch`).textContent());
+    const delta = monthDelta(shown, date);
+    if (delta === 0) break;
+    const arrow = page.locator(`${DAYS_VIEW} th.${delta > 0 ? 'next' : 'prev'}`);
+    if (await arrow.evaluate(el => el.classList.contains('disabled'))) {
+      throw new Error(`the calendar can't navigate ${delta > 0 ? 'forward' : 'back'} to ${date}`);
+    }
+    await arrow.click();
+  }
+  const cell = page.locator(`${DAYS_VIEW} td.day:not(.old):not(.new)[data-date="${dayEpoch(date)}"]`);
+  if (await cell.evaluate(el => el.classList.contains('disabled'))) {
+    throw new Error(`${date} is disabled in the calendar`);
+  }
+  await cell.click({ timeout: 5000 });
+}
+
+/** Whether the timeline currently has a block for this day label (e.g. "Monday - 16 Nov"). */
+export async function isDayVisible(page, label) {
+  return (await page.locator('.timeEntry', { hasText: label }).count()) > 0;
+}
+
+/**
+ * Select the start and end days of a window, then wait until the timeline renders
+ * exactly that many days. Waiting on one label would pass early on a stale window.
+ * Throws when it can't navigate, a day is disabled, or the timeline doesn't settle.
+ */
+export async function selectWindow(page, window) {
+  await clickDay(page, window.start);
+  await clickDay(page, window.end);
+  await page.waitForFunction(
+    n => document.querySelectorAll('.timeEntry').length === n,
+    windowDays(window),
+    { timeout: 10000 }
+  );
 }
