@@ -47,6 +47,10 @@ npm run check
 
 # Run tests
 npm test
+
+# Verify a portal UI change against the live portal (fake Entries, deleted afterwards).
+# Agents: use the verify-portal-ui skill.
+npm run submit -- --verify
 ```
 
 ## Architecture
@@ -118,11 +122,20 @@ Category, Enter is checked against the portal's actual selection and refused whi
 doesn't match. Do not run it unattended and do not run it on the user's
 behalf — pressing those prompts asserts a human fixed something by hand.
 
+**The one exception is verify mode.** After changing the portal flow, run
+`npm run submit -- --verify` (see `.claude/skills/verify-portal-ui/`): it submits a fixture
+of fake `[UI-VERIFY]` Entries, reads them back, and deletes them. It never prompts, so it
+asserts nothing on a human's behalf; a step that would need a human fails the run. Never
+run real `submit`, and never answer a recovery prompt. See
+`docs/adr/0005-agents-may-run-verify-mode.md`.
+
 Uses a Playwright persistent context with a **dedicated automation profile** (separate from
 the main Chrome profile), so it can run alongside Chrome and keep the portal login between
-runs. First run requires logging in once.
+runs. First run requires logging in once. The portal's own cookie is per-session; the
+persistent Microsoft sign-in re-authenticates it silently on launch (verified).
 
-**Form Selectors**: see `FORM_SELECTORS.md`.
+**Form Selectors**: `FORM_SELECTORS.md` does not exist; the selectors live in
+`src/lib/submit-flow.js` and `src/lib/portal.js`..
 
 **Key details**:
 - Knockout.js data-binding selectors (e.g. `data-bind="value: time"`)

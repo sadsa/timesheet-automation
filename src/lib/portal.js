@@ -95,3 +95,42 @@ export async function selectWindow(page, window) {
     { timeout: 10000 }
   );
 }
+
+/**
+ * Every saved Entry the timeline currently holds, from the view model rather than the
+ * DOM. `day` is the day's index among the rendered `.timeEntry` blocks and `slot` the
+ * Entry's index within it (the bars appear in the same order), which deleteEntry needs.
+ */
+export async function readEntries(page) {
+  return page.evaluate(() => {
+    const root = ko.contextFor(document.querySelector('.timesheetlistitem')).$root;
+    return ko.toJS(root.timesheetDays).flatMap((day, dayIndex) =>
+      day.TimesheetEntries.map((e, slot) => ({
+        id: e.EntryId,
+        date: e.Date.slice(0, 10),
+        project: e.ProjectName,
+        category: e.CategoryName,
+        hours: e.DurationInHours,
+        description: e.Description,
+        ticket: e.TicketReference || undefined,
+        day: dayIndex,
+        slot
+      })));
+  });
+}
+
+/**
+ * Delete one saved Entry through the UI: hover its bar, click the trash icon, accept
+ * the native "Delete Entry?" confirm, and wait for the portal's delete request to
+ * succeed. The view model does not refresh afterwards (verified live), so the caller
+ * must reload to see the result. The Entry's day must be on screen.
+ */
+export async function deleteEntry(page, entry, timeout = 10000) {
+  const bar = page.locator('.timeEntry').nth(entry.day).locator('.timeEntry-capturedTime').nth(entry.slot);
+  await bar.hover({ timeout: 5000 });
+  page.once('dialog', dialog => dialog.accept());
+  const response = page.waitForResponse(r => r.url().includes('/DeleteTimesheetEntry'), { timeout });
+  await bar.locator('.timeEntry-capturedTimeAction .icon-trash').click({ timeout: 5000 });
+  const { status } = await response.then(r => ({ status: r.status() }));
+  if (status >= 400) throw new Error(`deleting Entry ${entry.id} on ${entry.date} returned HTTP ${status}`);
+}
