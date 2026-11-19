@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { planWindows, windowFor, windowDays, dayEpoch, parseMonthTitle, monthDelta } from '../src/lib/calendar-windows.js';
+import { planWindows, clickableWindow, windowFor, windowDays, dayEpoch, parseMonthTitle, monthDelta } from '../src/lib/calendar-windows.js';
 
 test('windowDays counts days inclusive, across months', () => {
   assert.strictEqual(windowDays({ start: '2026-11-30', end: '2026-11-30' }), 1);
@@ -67,4 +67,10 @@ test('monthDelta is the signed number of next (+) / prev (-) clicks to reach a d
   assert.strictEqual(monthDelta(nov, '2026-12-01'), 1);
   assert.strictEqual(monthDelta(nov, '2027-02-10'), 3);
   assert.strictEqual(monthDelta(nov, '2026-09-30'), -2);
+});
+
+test('a one-day window is widened to two days, because the calendar needs a distinct end', () => {
+  assert.deepEqual(clickableWindow({ start: '2027-02-26', end: '2027-02-26' }), { start: '2027-02-26', end: '2027-02-27' });
+  assert.deepEqual(clickableWindow({ start: '2026-12-31', end: '2026-12-31' }), { start: '2026-12-31', end: '2027-01-01' });
+  assert.deepEqual(clickableWindow({ start: '2027-02-26', end: '2027-03-02' }), { start: '2027-02-26', end: '2027-03-02' });
 });

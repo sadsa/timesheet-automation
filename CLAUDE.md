@@ -165,6 +165,8 @@ validator is what holds their output to the contract.
 - **`NaNhNaN` in the portal**: `duration` was written as a string.
 - **Portal element not found**: the UI may have changed, or the Project/Category pairing
   doesn't exist. Run `npm run sync-projects`; the submit pre-flight should catch this first.
+- **Single-day calendar range**: clicking the same day twice leaves the range unset, so
+  `selectWindow` widens a one-day window to two (`clickableWindow`).
 - **Timeline interaction**: click `.timeEntry-entry` (the gray bar), NOT the date label.
   `.timeEntry-infoHeader` intercepts pointer events and causes timeouts.
   `page.locator('.timeEntry', { hasText: dayLabel }).locator('.timeEntry-entry').click()`

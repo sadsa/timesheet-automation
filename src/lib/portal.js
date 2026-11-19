@@ -6,7 +6,7 @@
  */
 import { chromium } from 'playwright';
 import { toCatalogue } from './catalogue.js';
-import { dayEpoch, monthDelta, parseMonthTitle, windowDays } from './calendar-windows.js';
+import { clickableWindow, dayEpoch, monthDelta, parseMonthTitle, windowDays } from './calendar-windows.js';
 
 export const PORTAL_URL = 'https://employee.entelect.co.nz/Timesheet';
 
@@ -86,11 +86,12 @@ export async function isDayVisible(page, label) {
  * Throws when it can't navigate, a day is disabled, or the timeline doesn't settle.
  */
 export async function selectWindow(page, window) {
-  await clickDay(page, window.start);
-  await clickDay(page, window.end);
+  const range = clickableWindow(window);
+  await clickDay(page, range.start);
+  await clickDay(page, range.end);
   await page.waitForFunction(
     n => document.querySelectorAll('.timeEntry').length === n,
-    windowDays(window),
+    windowDays(range),
     { timeout: 10000 }
   );
 }

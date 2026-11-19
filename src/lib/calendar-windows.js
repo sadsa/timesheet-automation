@@ -32,6 +32,15 @@ export function windowFor(windows, date) {
   return windows.find(w => date >= w.start && date <= w.end);
 }
 
+/**
+ * The range to click for a window. The calendar leaves the range unset when start and
+ * end are the same day (verified live), so a one-day window is widened to the next day.
+ * The extra day is harmless: the timeline renders it and nothing is submitted to it.
+ */
+export function clickableWindow({ start, end }) {
+  return start === end ? { start, end: addDays(end, 1) } : { start, end };
+}
+
 /** Days in a window, inclusive. The timeline renders one block per day, weekends included. */
 export function windowDays({ start, end }) {
   return Math.round((dayEpoch(end) - dayEpoch(start)) / 864e5) + 1;
