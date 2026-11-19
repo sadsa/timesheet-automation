@@ -8,7 +8,7 @@ import { chromium } from 'playwright';
 import { toCatalogue } from './catalogue.js';
 import { dayEpoch, monthDelta, parseMonthTitle, windowDays } from './calendar-windows.js';
 
-export const PORTAL_URL = 'https://employee.entelect.co.za/Timesheet';
+export const PORTAL_URL = 'https://employee.entelect.co.nz/Timesheet';
 
 /**
  * Dedicated automation profile, separate from the user's real Chrome profile so
